@@ -1,5 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 project(liveness)
+set(CMAKE_CXX_FLAGS "-g -Wall -Wunknown-pragmas")
 
 #need to include FindOPENCL.cmake to
 SET( CMAKE_MODULE_PATH ${liveness_SOURCE_DIR}/../cmake)
@@ -9,7 +10,7 @@ message("CMake module path: ${CMAKE_MODULE_PATH}\n")
 FIND_PACKAGE (OPENCL)
 
 INCLUDE_DIRECTORIES( 
-    ${liveness_SOURCE_DIR}/../opencl12/CL
+    ${liveness_SOURCE_DIR}/../opencl11/
 )
 
 message("include directories: \n")
@@ -20,6 +21,8 @@ message("${includes}\n")
 #ADD_DEFINITIONS(-DCL_SOURCE_DIR="${liveness_SOURCE_DIR}")
 #build in debug mode
 ADD_DEFINITIONS(-g )
+
+
 
 #the source files we want to compile into the library
 set (LIBCXXFILES cll.cpp liveness.cpp util.cpp)
