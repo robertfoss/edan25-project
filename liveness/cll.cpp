@@ -158,7 +158,7 @@ void CL::printDevices()
             clGetDeviceInfo(devices[j], CL_DEVICE_EXTENSIONS, sizeof(extensions), &extensions, &extensions_len);
             
             
-            printf("#%d\t%s - %s\tCores: %d\tMemory: %ldMB\tAvailable: %s\n", i, vendor, deviceName, numberOfCores, (maxAllocatableMem/(1024*1024)), (available ? "Yes" : "No"));
+            printf("Platform-%d Device-%d\t%s - %s\tCores: %d\tMemory: %ldMB\tAvailable: %s\n", i, j, vendor, deviceName, numberOfCores, (maxAllocatableMem/(1024*1024)), (available ? "Yes" : "No"));
             char* an_extension;
             if (extensions_len > 0){
             	
