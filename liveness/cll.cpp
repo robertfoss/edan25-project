@@ -41,6 +41,7 @@ CL::CL()
     //later you may have criteria (such as support for different extensions)
     //that you want to use to select the device
     deviceUsed = 0;
+
     //create the context
     ///context = clCreateContext(0, 1, &devices[deviceUsed], NULL, NULL, &err);
     //context properties will be important later, for now we go with defualts
@@ -125,7 +126,7 @@ void CL::printDevices()
 ///////////
 
     cl_platform_id platform[32];
-    cl_uint num_platform;
+    cl_uint num_platform = 32;
     char vendor[1024];
     cl_device_id devices[32];
     cl_uint num_devices;
