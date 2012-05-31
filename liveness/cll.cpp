@@ -28,9 +28,13 @@ CL::CL()
 	
     unsigned int best_platform = 0;
     unsigned int best_device = 0;
-    getBestDevice(best_platform, best_device);
-    std::cout << "Initiating platform-" << best_platform << " device-" << best_device << "." << std::endl;
     printDevices();
+    
+    if(!getBestDevice(best_platform, best_device)){
+        std::cout << "No suitable device was found! Try using an OpenCL1.1 compatible device." << std::endl;
+        exit(err);
+    }
+    std::cout << "Initiating platform-" << best_platform << " device-" << best_device << "." << std::endl;
 
 
     cl_int error = 0;   // Used to handle error codes
@@ -120,13 +124,16 @@ void CL::loadProgram(std::string kernel_source)
     }
 }
 
-void getBestDevice(unsigned int &ret_platform, unsigned int &ret_device)
+/*
+ * returns 0 if no suitable device was found.
+ */
+int getBestDevice(unsigned int &ret_platform, unsigned int &ret_device)
 {
     unsigned long long best_score = 0;
 
-    cl_platform_id platform[32];
-    cl_uint num_platform = 32;
-    cl_device_id devices[32];
+    cl_platform_id platform[MAX_RESOURCES];
+    cl_uint num_platform = MAX_RESOURCES;
+    cl_device_id devices[MAX_RESOURCES];
     cl_uint num_devices;
     cl_uint numberOfCores;
     cl_long amountOfMemory;
@@ -136,7 +143,7 @@ void getBestDevice(unsigned int &ret_platform, unsigned int &ret_device)
     size_t extensions_len = 0;
 
     //get the number of platforms
-    clGetPlatformIDs(32, platform, &num_platform);
+    clGetPlatformIDs(MAX_RESOURCES, platform, &num_platform);
     for(unsigned int i = 0; i < num_platform; i++) {
         clGetDeviceIDs(platform[i], CL_DEVICE_TYPE_ALL, sizeof(devices), devices, &num_devices);
         for(unsigned int j = 0; j < num_devices; ++j) {
@@ -147,8 +154,6 @@ void getBestDevice(unsigned int &ret_platform, unsigned int &ret_device)
             clGetDeviceInfo(devices[j], CL_DEVICE_EXTENSIONS, sizeof(extensions), &extensions, &extensions_len);
             char* an_extension;
             if (extensions_len > 0){
-            	
-           		printf("\t\tExtensions: \t");
            		an_extension = strtok(extensions, " ");
            		while (an_extension != NULL){
                     if( strcmp( "cl_khr_global_int32_base_atomics", an_extension) == 0){
@@ -158,24 +163,22 @@ void getBestDevice(unsigned int &ret_platform, unsigned int &ret_device)
                             ret_device = j;
                         }
                     }
-           			printf("%s\n\t\t\t\t", an_extension);
            			an_extension = strtok(NULL, " ");
            		}
 			}
-			printf("\n");
         }
 
     }
-    
+    return ((best_score != 0) ? 0 : 1);
 }
 
 
 void printDevices()
 {
-    cl_platform_id platform[32];
-    cl_uint num_platform = 32;
+    cl_platform_id platform[MAX_RESOURCES];
+    cl_uint num_platform = MAX_RESOURCES;
     char vendor[1024];
-    cl_device_id devices[32];
+    cl_device_id devices[MAX_RESOURCES];
     cl_uint num_devices;
     char deviceName[1024];
     cl_uint numberOfCores;
@@ -189,7 +192,7 @@ void printDevices()
 
 
     //get the number of platforms
-    clGetPlatformIDs(32, platform, &num_platform);
+    clGetPlatformIDs(MAX_RESOURCES, platform, &num_platform);
     for(unsigned int i = 0; i < num_platform; i++) {
         clGetPlatformInfo (platform[i], CL_PLATFORM_VENDOR, sizeof(vendor), vendor, NULL);
 
