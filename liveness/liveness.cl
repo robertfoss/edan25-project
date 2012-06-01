@@ -14,7 +14,7 @@ typedef unsigned int bitset;
 __constant int nvertex;
 __constant int bitset_size;
 
-__private char buffer[BUFF_SIZE];
+__constant char buffer[BUFF_SIZE];
 
 
 typedef struct{
@@ -42,7 +42,7 @@ int bitset_get_bit(bitset* arr, int index, unsigned int bit, unsigned bitset_siz
     return ((arr[bitset_size * index + bit_offset]) & (1 << bit_local_index));
 }
 
-/*
+
 
 bitset* bitset_copy(bitset* bs, unsigned bitset_size){
     bitset* new_bs;
@@ -227,7 +227,7 @@ void computeIn(vertex_t* vertices, int* succs, int* preds){
     free_locks(u, vertices);
 }
 
-
+/*
 __kernel void liveness(__global vertex_t* vs, __global int nv, int mpred, int msucc, __global int* pred, __global int* succ, int bs_size, __global bitset* i, __global bitset* o, __global bitset* u, __global bitset* d) {
 
     unsigned int id = get_global_id(0);
