@@ -1,7 +1,7 @@
 #ifndef _UTIL_H_INCLUDED
 #define _UTIL_H_INCLUDED
 
-#include "cl.h"
+#include "CL/cl.h"
 
 char *file_contents(const char *filename, int *length);
 
