@@ -344,7 +344,7 @@ vertex_t* create_vertices(int nactive, int nvertex2, int print_input){
 
     for(int i = 0; i < nvertex; ++i){
         vertices[i].index = i;
-        vertices[i].listed = 0;
+        vertices[i].listed = 1; //"in worklist"
         vertices[i].pred_count = 0;
         vertices[i].succ_count = 0;
     }

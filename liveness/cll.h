@@ -6,8 +6,10 @@
 #include <vector>
 #include "CL/cl.hpp"
 
+#define MAX_RESOURCES 32
+
 void printDevices();
-void getBestDevice(unsigned int &ret_platform, unsigned int &ret_device);
+int getBestDevice(unsigned int &ret_platform, unsigned int &ret_device);
 
 class CL {
     public:
@@ -48,7 +50,11 @@ class CL {
         //cl_device_id* devices;
         //cl_uint numDevices;
         //unsigned int deviceUsed;
-        std::vector<cl::Device> devices;
+        std::vector<cl::Device> cpp_devices;
+        cl_device_id chosen_device;
+
+        cl_platform_id platform[MAX_RESOURCES];
+        cl_device_id devices[MAX_RESOURCES];
         
         //cl_context context;
         cl::Context context;

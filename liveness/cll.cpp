@@ -5,7 +5,7 @@
 #include "cll.h"
 #include "util.h"
 
-#define MAX_RESOURCES 32
+
 
 CL::CL()
 {
@@ -38,8 +38,7 @@ CL::CL()
 
 
     cl_int error = 0;   // Used to handle error codes
-    cl_platform_id platform[MAX_RESOURCES];
-    cl_device_id device[MAX_RESOURCES];
+
 
     // Platform
     error = clGetPlatformIDs(MAX_RESOURCES, platform, NULL);
@@ -48,21 +47,23 @@ CL::CL()
        exit(error);
     }
     // Device
-    error = clGetDeviceIDs(platform[best_platform], CL_DEVICE_TYPE_ALL, sizeof(devices), device, NULL); //NULL, ignore number returned devices.
+    error = clGetDeviceIDs(platform[best_platform], CL_DEVICE_TYPE_ALL, sizeof(devices), devices, NULL); //NULL, ignore number returned devices.
     //error = clGetDeviceIDs(platform[i], CL_DEVICE_TYPE_ALL, sizeof(devices), devices, &num_devices);
     if (err != CL_SUCCESS) {
        std::cout << "Error getting device ids: " << oclErrorString(error) << std::endl;
        exit(error);
     }
+    chosen_device = devices[best_device];
+
     // Context
-    context = clCreateContext(0, 1, &(device[best_device]), NULL, NULL, &error);
+    context = clCreateContext(0, 1, &(devices[best_device]), NULL, NULL, &error);
     if (error != CL_SUCCESS) {
        std::cout << "Error creating context: " << oclErrorString(error) << std::endl;
        exit(error);
     }
     // Command-queue
     //queue = clCreateCommandQueue(context, &device[best_device], 0, &error); //c99-style
-    queue = cl::CommandQueue(context, device[best_device], 0, &error);
+    queue = cl::CommandQueue(context, devices[best_device], 0, &error);
     if (error != CL_SUCCESS) {
        std::cout << "Error creating command queue: " << oclErrorString(error) << std::endl;
        exit(error);
@@ -113,14 +114,14 @@ void CL::loadProgram(std::string kernel_source)
     printf("Building program.. ");
     try
     {
-        err = program.build(devices);
+        err = program.build(cpp_devices);
 		std::cout << "successful!" << std::endl;
     }
     catch (cl::Error er) {
         printf("error: %s\n", oclErrorString(er.err()));
-		std::cout << "\tBuild Status: \t" << program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(devices[0]) << std::endl;
-		std::cout << "\tBuild Options:\t" << program.getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(devices[0]) << std::endl;
-		std::cout << "\tBuild Log:\t" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0]) << std::endl;
+		std::cout << "\tBuild Status: \t" << program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(cpp_devices) << std::endl;
+		std::cout << "\tBuild Options:\t" << program.getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(cpp_devices) << std::endl;
+		std::cout << "\tBuild Log:\t" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(cpp_devices) << std::endl;
     }
 }
 

@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 project(liveness)
-set(CMAKE_CXX_FLAGS "-g -Wall -Wunknown-pragmas")
+set(CMAKE_C_FLAGS "-g -Wall -Wunknown-pragmas -std=c99")
 
 #need to include FindOPENCL.cmake to
 SET( CMAKE_MODULE_PATH ${liveness_SOURCE_DIR}/../cmake)
@@ -25,10 +25,10 @@ ADD_DEFINITIONS(-g )
 
 
 #the source files we want to compile into the library
-set (LIBCXXFILES cll.cpp liveness.cpp util.cpp)
+set (LIBCFILES opencl.c)
 #set a CMake variable to name the library
 SET(cllib liveness)
-ADD_LIBRARY(${cllib} ${LIBCXXFILES})
+ADD_LIBRARY(${cllib} ${LIBCFILES})
 
 
 #create the executable
