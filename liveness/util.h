@@ -1,11 +1,11 @@
-//from http://www.songho.ca/opengl/gl_vbo.html
+#ifndef _UTIL_H_INCLUDED
+#define _UTIL_H_INCLUDED
 
-#ifndef ADVCL_UTIL_H_INCLUDED
-#define ADVCL_UTIL_H_INCLUDED
+#include "CL/cl.h"
 
 char *file_contents(const char *filename, int *length);
 
-const char* oclErrorString(cl_int error);
+const char* ocl_error_string(cl_int error);
 
 
 #endif
