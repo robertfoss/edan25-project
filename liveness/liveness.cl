@@ -1,7 +1,3 @@
-#define STRINGIFY(A) #A
-std::string kernel_source = STRINGIFY(
-
-
 /** int32 atomics are enabled and supported by all opencl1.1 devices. */
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable
@@ -9,15 +5,20 @@ std::string kernel_source = STRINGIFY(
 #pragma OPENCL EXTENSION cl_khr_local_int32_extended_atomics : enable
 
 typedef unsigned int bitset;
-
+unsigned int myid;
 int nvertex;
+vertex_t* vertices;
+int maxpred;
+int maxsucc;
+int* pred_list;
+int* succ_list;
+int bitset_size;
+bitset* in;
+bitset* out;
+bitset* use;
+bitset* def;
 
-struct uint_2{
-	unsigned int a;
-	unsigned int b;
-	int semaphore;
-};
-typedef struct uint_2 uint_2;
+char buffer[200];
 
 
 typedef struct{
@@ -27,13 +28,6 @@ typedef struct{
     unsigned int succ_count;
 	int semaphore;
 } vertex_t;
-
-
-double sec(void){
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return (double) tv.tv_sec + (double)tv.tv_usec / 1000000;
-}
 
 
 void bitset_set_bit(bitset* arr, int index, unsigned int bit){
@@ -53,7 +47,7 @@ int bitset_get_bit(bitset* arr, int index, unsigned int bit){
 
 bitset* bitset_copy(bitset* bs){
     bitset* new_bs;
-    new_bs = (bitset*) malloc(bitset_size);
+    new_bs = (bitset*) buffer;
     for(unsigned int i = 0; i < bitset_size; ++i){
         new_bs[i] = bs[i];
     }
@@ -85,7 +79,7 @@ void bitset_and_not(bitset* bs1, bitset* bs2){
 }
 
 
-int acqire_locks(vertex_t* v, vertex_t* vertices){
+int acquire_locks(vertex_t* v){
 
     int s;
     int p;
@@ -128,29 +122,42 @@ int acqire_locks(vertex_t* v, vertex_t* vertices){
     if(fail) return 0;
 
     return 1;
+}
 
-vertex_t* acquire_next(vertex_t* vertices){
 
-    int c = 0;
+int acquire_next(){
+
+    int c = myid;
     vertex_t* v;
+    int listed_left = 0;
 
     while(1){
 
-        if(c == nvertex) c = 0;
+        if(c == nvertex){
+            c = 0;
+        }
 
         v = vertices[c];
 
         if(v->listed && !v->semaphore && acquire_locks(v)){
-            return v;
+            v->listed = 0;
+            return v->index;
+        } else if(v->listed){
+            listed_left = 1;
         }
 
         c++;
+
+        if(c == myid && !listed_left){
+            return -1;
+        }
+
     }
 
 }
 
 
-void free_locks(vertex_t* v, vertex_t* vertices){
+void free_locks(vertex_t* v){
 
     int v_index = v->index;
 
@@ -164,7 +171,7 @@ void free_locks(vertex_t* v, vertex_t* vertices){
     atomic_xchg(&vertices[v_index].semaphore, 0);
 }
 
-
+/*
 void acquire_lock(__global uint_2* x) {
    int occupied = atomic_xchg(&x[0].semaphore, 1);
    while(occupied > 0)
@@ -193,15 +200,19 @@ unsigned int gcd(unsigned int a, unsigned int b)
 			return a;
     }
 }
+*/
 
+void computeIn(){
 
-void computeIn(vertex_t* vertices, int* succs, int* preds){
+    int u_index = acquire_next();
+    if(u_index == -1){
+        return;
+    }
 
-    vertex_t* u = acquire_next(vertices); //TODO
-    u->listed = 0;
+    vertex_t* u = vertices[u_index];
+//    u->listed = 0;
 
     vertex_t* v;
-    int u_index = u->index;
     int v_index;
     int bs_u_index = u_index * bitset_size;
     int bs_v_index;
@@ -231,39 +242,34 @@ void computeIn(vertex_t* vertices, int* succs, int* preds){
     }
 
     free(old);
-    free_locks(u, vertices);
+    free_locks(u);
 }
 
 
 __kernel void liveness(__global vertex_t* vs, __global int nv, int mpred, int msucc, __global int* pred, __global int* succ, int bs_size, __global bitset* i, __global bitset* o, __global bitset* u, __global bitset* d) {
 
-    unsigned int id = get_global_id(0);
+    myid = get_global_id(0);
 
-    vertex_t* vertices = vs;
+    vertices = vs;
     nvertex = nv;
-    int maxpred = mpred;
-    int maxsucc = msucc;
-    int* pred_list = pred;
-    int* succ_list = succ;
-    int bitset_size = bs_size;
-    bitset* in = i;
-    bitset* out = o;
-    bitset* use = u;
-    bitset* def = d;
+    maxpred = mpred;
+    maxsucc = msucc;
+    pred_list = pred;
+    succ_list = succ;
+    bitset_size = bs_size;
+    in = i;
+    out = o;
+    use = u;
+    def = d;
 
-    computeIn(vertices, succ_list, pred_list);
+    computeIn();
 
 }
 
 
-/*__kernel void liveness(__global uint_2* x, __global unsigned int* c)
-{
-    unsigned int i = get_global_id(0);
+__kernel void square( __global float* input, __global float* output, const unsigned int count) {
+   int i = get_global_id(0);
+   if(i < count)
+       output[i] = input[i] * input[i];
 
-    c[i] = gcd(x[i].a, x[i].b);
-}*/
-
-
-
-
-);
+}
