@@ -16,17 +16,10 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, cl
 {
         cl_int err;                            // error code returned from api calls
 
+        cl_platform_id platform_id;				// compute device id
+        cl_program program;						// compute program
         cl_device_id devices[MAX_RESOURCES];
         cl_platform_id platforms[MAX_RESOURCES];
-
-        cl_platform_id platform_id;             // compute device id
-        cl_program program;                 // compute program
-//    cl_device_id device_id;             // compute device id
-//    cl_context context;                 // compute context
-//    cl_command_queue queue;          // compute command queue
-//    cl_kernel kernel;                   // compute kernel
-
-
 
         unsigned int best_platform = 0;
         unsigned int best_device = 0;
@@ -87,7 +80,7 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, cl
         err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
         if (err != CL_SUCCESS) {
                 size_t len;
-                char buffer[2048];
+                char buffer[1000*1024];
 
                 printf("Error: Failed to build program executable: %s\n",  ocl_error_string(err));
                 clGetProgramBuildInfo(program, *device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);

@@ -1,6 +1,3 @@
-#define STRINGIFY(A) #A
-std::string kernel_source = STRINGIFY(
-
 
 /** int32 atomics are enabled and supported by all opencl1.1 devices. */
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
@@ -8,16 +5,16 @@ std::string kernel_source = STRINGIFY(
 #pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_extended_atomics : enable
 
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
+
+#define BUFF_SIZE (1024)
+
 typedef unsigned int bitset;
 
-int nvertex;
+__constant int nvertex;
+__constant int bitset_size;
 
-struct uint_2{
-	unsigned int a;
-	unsigned int b;
-	int semaphore;
-};
-typedef struct uint_2 uint_2;
+__private char buffer[BUFF_SIZE];
 
 
 typedef struct{
@@ -29,29 +26,25 @@ typedef struct{
 } vertex_t;
 
 
-double sec(void){
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return (double) tv.tv_sec + (double)tv.tv_usec / 1000000;
-}
 
-
-void bitset_set_bit(bitset* arr, int index, unsigned int bit){
+void bitset_set_bit(bitset* arr, int index, unsigned int bit, unsigned bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
     //printf("\nSET\tbit = %d\tbit_offset = %d\tbit_local_index = %d\n", bit, bit_offset, bit_local_index);
-    arr[bitset_size * index + bit_offset] |= (1 << bit_local_index);
+	unsigned offset = bitset_size * index + bit_offset;
+    arr[offset] |= (1 << bit_local_index);
 }
 
-int bitset_get_bit(bitset* arr, int index, unsigned int bit){
+int bitset_get_bit(bitset* arr, int index, unsigned int bit, unsigned bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
     //printf("\nbit_offset = %d\tbit_local_index = %d\n", bit_offset, bit_local_index);
     return ((arr[bitset_size * index + bit_offset]) & (1 << bit_local_index));
 }
 
+/*
 
-bitset* bitset_copy(bitset* bs){
+bitset* bitset_copy(bitset* bs, unsigned bitset_size){
     bitset* new_bs;
     new_bs = (bitset*) malloc(bitset_size);
     for(unsigned int i = 0; i < bitset_size; ++i){
@@ -255,15 +248,12 @@ __kernel void liveness(__global vertex_t* vs, __global int nv, int mpred, int ms
 
 }
 
-
-/*__kernel void liveness(__global uint_2* x, __global unsigned int* c)
+*/
+__kernel void liveness( __global double* input, __global double* output, const unsigned int count)
 {
-    unsigned int i = get_global_id(0);
+   int i = get_global_id(0);
+   if(i < count)
+       output[i] = input[i] * input[i];
 
-    c[i] = gcd(x[i].a, x[i].b);
-}*/
+}
 
-
-
-
-);
