@@ -89,7 +89,7 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, cl
                 size_t len;
                 char buffer[2048];
 
-                printf("Error: Failed to build program executable!\n\n");
+                printf("Error: Failed to build program executable: %s\n",  ocl_error_string(err));
                 clGetProgramBuildInfo(program, *device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
                 printf("%s\n", buffer);
                 exit(1);
