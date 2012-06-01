@@ -3,11 +3,11 @@ class Random {
 	unsigned int z;
 
 	public:
-		Random(unsigned int seed):w(seed+1),z(seed*seed+seed+w) {
+		Random(unsigned int seed):w(seed+1),z(seed*seed+seed+2) {
 		}
 
 
-		unsigned int nextInt() {
+		int nextInt() {
 			z = 36969 * (z & 65535) + (z >> 16);
 			w = 18000 * (w & 65535) + (w >> 16);
 
