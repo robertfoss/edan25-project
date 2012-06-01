@@ -6,7 +6,7 @@ mkdir build
 cd build
 cmake ..
 make
-./liveness
+./liveness1.x
 
 
 Supporting directories:

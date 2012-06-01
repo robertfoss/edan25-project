@@ -6,6 +6,9 @@
 #include <vector>
 #include "CL/cl.hpp"
 
+void printDevices();
+void getBestDevice(unsigned int &ret_platform, unsigned int &ret_device);
+
 class CL {
     public:
 
@@ -29,8 +32,6 @@ class CL {
         //load an OpenCL program from a file
         //pass in the kernel source code as a string. handy way to get this from STRINGIFY macro in liveness.cl
         void loadProgram(std::string kernel_source);
-        
-        void printDevices();
 
         //setup the data for the kernel 
         //these are implemented in liveness.cpp (in the future we will make these more general)
@@ -46,7 +47,7 @@ class CL {
         //device variables
         //cl_device_id* devices;
         //cl_uint numDevices;
-        unsigned int deviceUsed;
+        //unsigned int deviceUsed;
         std::vector<cl::Device> devices;
         
         //cl_context context;
