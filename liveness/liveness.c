@@ -24,6 +24,8 @@ int main(int argc, char **argv)
         double data[DATA_SIZE];				// original data set given to device
         double results[DATA_SIZE];			// results returned from device
         unsigned int correct;				// number of correct results returned
+        
+        unsigned int bitset_size = 50;		// vertex - bitset_size
 
 
         // Fill our data set with random unsigned int values
@@ -31,8 +33,10 @@ int main(int argc, char **argv)
 		unsigned int count = DATA_SIZE;
 		for(i = 0; i < count; i++)
 		    data[i] = (double) (rand() / (double)RAND_MAX);
-
-        setup_opencl("square.cl", "square", &device_id, &kernel, &context, &queue);
+		
+		char build_options[50];
+		sprintf(build_options, "-D BUFF_SIZE=%u", bitset_size);
+        setup_opencl("liveness.cl", "liveness", build_options, &device_id, &kernel, &context, &queue);
 
         // Get the maximum work group size for executing the kernel on the device
         err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
