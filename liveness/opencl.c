@@ -12,7 +12,7 @@
 
 
 void setup_opencl(const char* cl_source_filename, const char* cl_source_main, const char* cl_compile_option,
-		cl_device_id* device_id_ptr, cl_kernel* kernel_ptr, cl_context* context_ptr, cl_command_queue* queue_ptr)
+                  cl_device_id* device_id_ptr, cl_kernel* kernel_ptr, cl_context* context_ptr, cl_command_queue* queue_ptr)
 {
         cl_int err;                         // error code returned from api calls
 
@@ -88,17 +88,17 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, co
         err = clBuildProgram(program, 0, NULL, cl_compile_option, NULL, NULL);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to build program executable: %s\n",  ocl_error_string(err));
-				
-				char* build_log;
-				size_t log_size;
-				// First call to know the proper size
-				clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
-				build_log = malloc(sizeof(char)*(log_size+1));
-				// Second call to get the log
-				clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
-				build_log[log_size] = '\0';
+
+                char* build_log;
+                size_t log_size;
+                // First call to know the proper size
+                clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+                build_log = malloc(sizeof(char)*(log_size+1));
+                // Second call to get the log
+                clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
+                build_log[log_size] = '\0';
                 printf("%s\n", build_log);
-				free(build_log);
+                free(build_log);
 
                 exit(1);
         }

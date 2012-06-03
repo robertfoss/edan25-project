@@ -1,6 +1,6 @@
-typedef struct{
-    int w;
-    int z;
+typedef struct {
+        int w;
+        int z;
 } random_t;
 
 random_t* new_random();
