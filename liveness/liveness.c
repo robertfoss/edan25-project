@@ -24,19 +24,58 @@ int main(int argc, char **argv)
         double data[DATA_SIZE];				// original data set given to device
         double results[DATA_SIZE];			// results returned from device
         unsigned int correct;				// number of correct results returned
-        
+
+
+        int	i;
+        int	maxsucc;
+        int	nactive;
+        int	nthread;
+        bool print_output;
+        list_t* vertex;
+        Random* r = new_random();
+        list_t* tmp_list;
+
+        setSeed(r, 1);
+        vertex = create_node(NULL); //First element = NULL
+
+        char* tmp_string = "";
+
+        sscanf(av[1], "%d", &nsym);
+        sscanf(av[2], "%d", &nvertex);
+        sscanf(av[3], "%d", &maxsucc);
+        sscanf(av[4], "%d", &nactive);
+        sscanf(av[5], "%d", &nthread);
+
+        tmp_string = av[6];
+        if(tolower(tmp_string[0]) == 't') {
+                print_output = true;
+        } else {
+                print_output = false;
+        }
+
+        tmp_string = av[7];
+        if(tolower(tmp_string[0]) == 't') {
+                print_input = true;
+        } else {
+                print_input = false;
+        }
+
         unsigned int bitset_size = 50;		// vertex - bitset_size
 
 
         // Fill our data set with random unsigned int values
         int i = 0;
-		unsigned int count = DATA_SIZE;
-		for(i = 0; i < count; i++)
-		    data[i] = (double) (rand() / (double)RAND_MAX);
-		
-		char build_options[50];
-		sprintf(build_options, "-D BUFF_SIZE=%u", bitset_size);
+        unsigned int count = DATA_SIZE;
+        for(i = 0; i < count; i++)
+                data[i] = (double) (rand() / (double)RAND_MAX);
+
+        char build_options[50];
+        sprintf(build_options, "-D BUFF_SIZE=%u", bitset_size);
         setup_opencl("liveness.cl", "liveness", build_options, &device_id, &kernel, &context, &queue);
+
+        //create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t *vertices,
+        //                unsigned int *bitset_size, unsigned int* pred_list, unsigned int* succ_list, bitset_t* in, bitset_t *out,
+        //                bitset_t* use, bitset_t* def)
 
         // Get the maximum work group size for executing the kernel on the device
         err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
@@ -57,12 +96,12 @@ int main(int argc, char **argv)
                 exit(1);
         }
 
-		// Write our data set into the input array in device memory 
-		err = clEnqueueWriteBuffer(queue, input, CL_TRUE, 0, sizeof(double) * count, data, 0, NULL, NULL);
-		if (err != CL_SUCCESS) {
-		    printf("Error: Failed to write to source array: %s\n", ocl_error_string(err));
-		    exit(1);
-		}
+        // Write our data set into the input array in device memory
+        err = clEnqueueWriteBuffer(queue, input, CL_TRUE, 0, sizeof(double) * count, data, 0, NULL, NULL);
+        if (err != CL_SUCCESS) {
+                printf("Error: Failed to write to source array: %s\n", ocl_error_string(err));
+                exit(1);
+        }
 
         // Set the arguments to our compute kernel
         err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
