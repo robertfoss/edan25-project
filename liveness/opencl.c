@@ -14,7 +14,7 @@
 void setup_opencl(const char* cl_source_filename, const char* cl_source_main, const char* cl_compile_option,
                   cl_device_id* device_id_ptr, cl_kernel* kernel_ptr, cl_context* context_ptr, cl_command_queue* queue_ptr)
 {
-        cl_int err;                         // error code returned from api calls
+        cl_int err = CL_SUCCESS;			// error code returned from api calls
 
         cl_platform_id platform_id;         // compute device id
         cl_program program;                 // compute program
@@ -70,7 +70,6 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, co
                 printf("Error: creating command queue: %s", ocl_error_string(err));
                 exit(err);
         }
-        queue=queue;
 
         // Read .cl source into memory
         int cl_source_len = 0;

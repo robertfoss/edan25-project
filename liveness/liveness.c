@@ -31,9 +31,9 @@ int main(int argc, char **argv)
         char* tmp_string = "";
         unsigned int bitset_size;
 
-		vertex_t *vertices;
-		bitset_t *in, *out, *use, *def;
-		unsigned int *pred_list, *succ_list;
+		vertex_t *vertices=NULL;
+		bitset_t *in=NULL, *out=NULL, *use=NULL, *def=NULL;
+		unsigned int *pred_list=NULL, *succ_list=NULL;
 		
 		if(argc != 7){
 		    printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n");
