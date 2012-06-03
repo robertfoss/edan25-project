@@ -21,7 +21,7 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, co
         cl_device_id devices[MAX_RESOURCES];
         cl_platform_id platforms[MAX_RESOURCES];
 
-        // *_ptr cannot be used directly as it causes a SEGFAULT in clCreateCommandQueue(). //TODO: Fixme?
+        // *_ptr cannot be used directly as it causes a SEGFAULT in clCreateCommandQueue() on some AMD systems. //TODO: Fixme?
         cl_device_id device_id;				// device id running computation
         cl_context context;					// compute context
         cl_command_queue queue;				// compute command queue
