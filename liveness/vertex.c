@@ -253,8 +253,9 @@ void generateUseDef(vertex_t* vertex_list, int nvertex, int nactive, int nsym, b
 }
 
 
-vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t *vertices, unsigned int *bitset_size,
-		unsigned int* pred_list, unsigned int* succ_list, bitset_t* in, bitset_t *out, bitset_t* use, bitset_t* def) {
+vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t *vertices, 
+		unsigned int *bitset_size, unsigned int* pred_list, unsigned int* succ_list, bitset_t* in, bitset_t *out, 
+		bitset_t* use, bitset_t* def) {
     printf("create_vertices\n");
 
     *bitset_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
