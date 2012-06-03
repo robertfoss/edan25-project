@@ -7,7 +7,9 @@
 
 #pragma OPENCL EXTENSION cl_khr_fp64: enable
 
+#ifndef BUFF_SIZE
 #define BUFF_SIZE (1024)
+#endif
 
 typedef unsigned int bitset;
 
@@ -64,7 +66,7 @@ bitset* bitset_copy(bitset* bs, unsigned bitset_size){
     }
     return new_bs;
 }
-
+/*
 
 int bitset_equals(bitset* bs1, bitset* bs2){
     for(unsigned int i = 0; i < bitset_size; ++i){
@@ -186,7 +188,6 @@ void free_locks(vertex_t* v){
     atomic_xchg(&vertices[v_index].semaphore, 0);
 }
 
-/*
 void acquire_lock(__global uint_2* x) {
    int occupied = atomic_xchg(&x[0].semaphore, 1);
    while(occupied > 0)
@@ -194,6 +195,7 @@ void acquire_lock(__global uint_2* x) {
      occupied = atomic_xchg(&x[0].semaphore, 1);
    }
 }
+
 
 
 void release_lock(__global uint_2* x)
@@ -215,7 +217,7 @@ unsigned int gcd(unsigned int a, unsigned int b)
 			return a;
     }
 }
-*/
+
 
 void computeIn(){
 
@@ -259,7 +261,7 @@ void computeIn(){
     free(old);
     free_locks(u);
 }
-
+*/
 /*
 __kernel void liveness(__global vertex_t* vs, __global int nv, int mpred, int msucc, __global int* pred, __global int* succ, int bs_size, __global bitset* i, __global bitset* o, __global bitset* u, __global bitset* d) {
 
