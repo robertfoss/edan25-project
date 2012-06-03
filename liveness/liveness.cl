@@ -17,7 +17,6 @@ __constant int bitset_size;
 __constant char buffer[BUFF_SIZE];
 
 unsigned int myid;
-int nvertex;
 vertex_t* vertices;
 int maxpred;
 int maxsucc;
@@ -91,6 +90,7 @@ void bitset_and_not(bitset* bs1, bitset* bs2){
 }
 
 
+// why do we need 3 different semaphore values ?
 int acquire_locks(vertex_t* v){
 
     int s;
@@ -100,6 +100,7 @@ int acquire_locks(vertex_t* v){
     int fail = 0;
 
     if(atomic_xchg(&v.semaphore, 1)){
+        atomic_xchg(&v.semaphore, 0);
         return 0;
     }
 
@@ -162,6 +163,8 @@ int acquire_next(){
 
         if(c == myid && !listed_left){
             return -1;
+        } else if(c == myid){
+            listed_left = 0;
         }
 
     }
