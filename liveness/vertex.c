@@ -267,12 +267,12 @@ vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int p
                           unsigned int *bitset_size, unsigned int* pred_list, unsigned int* succ_list, bitset_t* in, bitset_t *out,
                           bitset_t* use, bitset_t* def)
 {
-        printf("create_vertices\n");
+        printf("Creating vertices..\n");
 
         *bitset_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
-        printf("bitset_size = %u\n", *bitset_size);
+        printf("Defined bitset_size = %u bytes.\n", *bitset_size);
 
-        unsigned int *data_size = 0;
+        unsigned int data_size = 0;
 
         vertices = (vertex_t*) malloc(sizeof(vertex_t) * nvertex);
         data_size += sizeof(vertex_t)*nvertex;
@@ -282,17 +282,17 @@ vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int p
         use = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         def = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
 
-        *data_size = sizeof(bitset_t ) * (*bitset_size) * nvertex * 4;
+        data_size = sizeof(bitset_t ) * (*bitset_size) * nvertex * 4;
 
         pred_list = (unsigned int*) malloc((sizeof(int) * nvertex) * nvertex);
-        *data_size += (sizeof(int) * nvertex) * nvertex;
+        data_size += (sizeof(int) * nvertex) * nvertex;
         succ_list = (unsigned int*) malloc((sizeof(int) * maxsucc) * nvertex);
-        *data_size += (sizeof(int) * nvertex) * maxsucc;
+        data_size += (sizeof(int) * nvertex) * maxsucc;
 
-        printf("Vertex data size: %d KB.", (int)((*data_size)/1024));
+        printf("Vertex data size: %.2f KB.\n", ((float)data_size/1024));
 
-        random_t rand = new_random();
-        set_seed(&rand, 1);
+        random_t *rand = new_random();
+        set_seed(rand, 1);
 
         for(int i = 0; i < nvertex; ++i) {
                 vertices[i].index = i;
@@ -301,8 +301,8 @@ vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int p
                 vertices[i].succ_count = 0;
         }
 
-        generateCFG(vertices, nvertex, &rand, nvertex, maxsucc, pred_list, succ_list, print_input);
-        generateUseDef(vertices, nvertex, nactive, nsym, use, def, &rand, *bitset_size, print_input);
+        generateCFG(vertices, nvertex, rand, nvertex, maxsucc, pred_list, succ_list, print_input);
+        generateUseDef(vertices, nvertex, nactive, nsym, use, def, rand, *bitset_size, print_input);
 
         return vertices;
 

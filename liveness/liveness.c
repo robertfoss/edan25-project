@@ -1,10 +1,11 @@
 #include <stdio.h>
-#include <math.h>
+#include <ctype.h>
 
 #include "CL/cl.h"
 
 #include "opencl.h"
 #include "util.h"
+#include "vertex.h"
 
 #define DATA_SIZE (1024)
 
@@ -18,49 +19,47 @@ int main(int argc, char **argv)
         cl_command_queue queue;				// compute command queue
         cl_kernel kernel;					// compute kernel
 
-        cl_mem input;                       // device memory used for the input array
-        cl_mem output;                      // device memory used for the output array
+        cl_mem tmp_input;					// device memory used for the input array
+        cl_mem tmp_output;					// device memory used for the output array
 
         double data[DATA_SIZE];				// original data set given to device
         double results[DATA_SIZE];			// results returned from device
         unsigned int correct;				// number of correct results returned
 
-
-        int	i;
-        int	maxsucc;
-        int	nactive;
-        int	nthread;
-        bool print_output;
-        list_t* vertex;
-        Random* r = new_random();
-        list_t* tmp_list;
-
-        setSeed(r, 1);
-        vertex = create_node(NULL); //First element = NULL
-
+		// Variables representing properties of the desired CFG
+		int nsym=100, nvertex=8, maxsucc=4, nactive=10, print_output=0, print_input=0;
         char* tmp_string = "";
+        unsigned int bitset_size;
 
-        sscanf(av[1], "%d", &nsym);
-        sscanf(av[2], "%d", &nvertex);
-        sscanf(av[3], "%d", &maxsucc);
-        sscanf(av[4], "%d", &nactive);
-        sscanf(av[5], "%d", &nthread);
+		vertex_t *vertices;
+		bitset_t *in, *out, *use, *def;
+		unsigned int *pred_list, *succ_list;
+		
+		if(argc != 7){
+		    printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n");
+		} else {
+		    sscanf(argv[1], "%d", &nsym);
+		    sscanf(argv[2], "%d", &nvertex);
+		    sscanf(argv[3], "%d", &maxsucc);
+		    sscanf(argv[4], "%d", &nactive);
 
-        tmp_string = av[6];
-        if(tolower(tmp_string[0]) == 't') {
-                print_output = true;
-        } else {
-                print_output = false;
-        }
+		    tmp_string = argv[5];
+		    if(tolower(tmp_string[0]) == 't') {
+		            print_output = 1;
+		    } else {
+		            print_output = 0;
+		    }
 
-        tmp_string = av[7];
-        if(tolower(tmp_string[0]) == 't') {
-                print_input = true;
-        } else {
-                print_input = false;
-        }
+		    tmp_string = argv[6];
+		    if(tolower(tmp_string[0]) == 't') {
+		            print_input = 1;
+		    } else {
+		            print_input = 0;
+		    }
+		}
 
-        unsigned int bitset_size = 50;		// vertex - bitset_size
+        create_vertices(nsym, nvertex, maxsucc, nactive, print_input, vertices, &bitset_size,
+                        pred_list, succ_list, in, out, use, def);
 
 
         // Fill our data set with random unsigned int values
@@ -73,9 +72,6 @@ int main(int argc, char **argv)
         sprintf(build_options, "-D BUFF_SIZE=%u", bitset_size);
         setup_opencl("liveness.cl", "liveness", build_options, &device_id, &kernel, &context, &queue);
 
-        //create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t *vertices,
-        //                unsigned int *bitset_size, unsigned int* pred_list, unsigned int* succ_list, bitset_t* in, bitset_t *out,
-        //                bitset_t* use, bitset_t* def)
 
         // Get the maximum work group size for executing the kernel on the device
         err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
@@ -85,27 +81,27 @@ int main(int argc, char **argv)
         }
 
         // Create the input and output arrays in device memory for our calculation
-        input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * count, NULL, &err);
+        tmp_input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(double) * count, NULL, &err);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to allocate device READ memory: %s\n", ocl_error_string(err));
                 exit(1);
         }
-        output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double) * count, NULL, &err);
+        tmp_output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double) * count, NULL, &err);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to allocate device WRITE memory: %s\n", ocl_error_string(err));
                 exit(1);
         }
 
         // Write our data set into the input array in device memory
-        err = clEnqueueWriteBuffer(queue, input, CL_TRUE, 0, sizeof(double) * count, data, 0, NULL, NULL);
+        err = clEnqueueWriteBuffer(queue, tmp_input, CL_TRUE, 0, sizeof(double) * count, data, 0, NULL, NULL);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to write to source array: %s\n", ocl_error_string(err));
                 exit(1);
         }
 
         // Set the arguments to our compute kernel
-        err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
-        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
+        err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &tmp_input);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &tmp_output);
         err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &count);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to set kernel arguments: %s\n", ocl_error_string(err));
@@ -125,7 +121,7 @@ int main(int argc, char **argv)
         clFinish(queue);
 
         // Read back the results from the device to verify the output
-        err = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sizeof(double) * count, results, 0, NULL, NULL );
+        err = clEnqueueReadBuffer(queue, tmp_output, CL_TRUE, 0, sizeof(double) * count, results, 0, NULL, NULL );
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
                 exit(1);
