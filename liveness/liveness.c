@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 		unsigned int *pred_list=NULL, *succ_list=NULL;
 		
 		if(argc != 7){
-		    printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n");
+		    printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n\n");
 		} else {
 		    sscanf(argv[1], "%d", &nsym);
 		    sscanf(argv[2], "%d", &nvertex);
