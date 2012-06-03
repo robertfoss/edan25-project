@@ -39,7 +39,7 @@ bitset_t* use;
 bitset_t* def;*/
 
 
-void bitset_set_bit(bitset_t* arr, int index, unsigned int bit, unsigned bitset_size){
+void bitset_set_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
     //printf("\nSET\tbit = %d\tbit_offset = %d\tbit_local_index = %d\n", bit, bit_offset, bit_local_index);
@@ -47,7 +47,7 @@ void bitset_set_bit(bitset_t* arr, int index, unsigned int bit, unsigned bitset_
     arr[offset] |= (1 << bit_local_index);
 }
 
-int bitset_get_bit(bitset_t* arr, int index, unsigned int bit, unsigned bitset_size){
+int bitset_get_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
     //printf("\nbit_offset = %d\tbit_local_index = %d\n", bit_offset, bit_local_index);
@@ -56,7 +56,7 @@ int bitset_get_bit(bitset_t* arr, int index, unsigned int bit, unsigned bitset_s
 
 
 
-bitset_t* bitset_copy(bitset_t* bs, unsigned bitset_size){
+bitset_t* bitset_copy(bitset_t* bs, int bitset_size){
     bitset_t* new_bs;
     new_bs = (bitset_t*) buffer;
     for(unsigned int i = 0; i < bitset_size; ++i){
@@ -66,7 +66,7 @@ bitset_t* bitset_copy(bitset_t* bs, unsigned bitset_size){
 }
 /*
 
-int bitset_equals(bitset_t* bs1, bitset_t* bs2){
+int bitset_equals(bitset_t* bs1, bitset_t* bs2, int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
         if(bs1[i] != bs2[i]){
             return 0;
@@ -75,13 +75,14 @@ int bitset_equals(bitset_t* bs1, bitset_t* bs2){
     return 1;
 }
 
-void bitset_or(bitset_t* bs1, bitset_t* bs2){
+void bitset_or(bitset_t* bs1, bitset_t* bs2, int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
         bs1[i] |= bs2[i];
     }
 }
 
-void bitset_and_not(bitset_t* bs1, bitset_t* bs2){
+
+void bitset_and_not(bitset_t* bs1, bitset_t* bs2, int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
         unsigned int tmp = bs1[i] & bs2[i];
         tmp = ~tmp;
@@ -89,8 +90,6 @@ void bitset_and_not(bitset_t* bs1, bitset_t* bs2){
     }
 }
 
-
-(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred, int maxsucc, int* pred_list, int* succ_list, int bitset_size,  bitset_t* in, bitset_t* out, bitset_t* use, bitset_t* def){
 
 int acquire_locks(vertex_t* v, vertex_t* vertices, int maxpred, int maxsucc, int* pred_list, int* succ_list){
 
