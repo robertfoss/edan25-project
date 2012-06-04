@@ -5,19 +5,20 @@
 #pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_extended_atomics : enable
 
-#pragma OPENCL EXTENSION cl_khr_fp64: require
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
 
+// TODO: REMOVE BUFF_SIZE
 #ifndef BUFF_SIZE
 #define BUFF_SIZE (1024)
 #endif
 
-/*
 typedef unsigned int bitset_t;
 
 __constant int nvertex;
 __constant int bitset_size;
 
-__constant char buffer[BUFF_SIZE];
+// TODO: REMOVE BUFF_SIZE
+//__private char buffer[BUFF_SIZE];
 
 typedef struct{
     int index;
@@ -27,6 +28,7 @@ typedef struct{
 	int semaphore;
 } vertex_t;
 
+/*
 unsigned int myid;
 vertex_t* vertices;
 int maxpred;
@@ -261,32 +263,24 @@ void computeIn(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred, 
     free_locks(u, vertices, maxpred, maxsucc);
 }
 
-__kernel void liveness(__global vertex_t* vertices, __global int nvertex, int maxpred, int maxsucc, __global int* pred_list, __global int* succ_list, int bitset_size, __global bitset_t* in, __global bitset_t* out, __global bitset_t* use, __global bitset_t* def) {
+*/
+__kernel void liveness(
+			unsigned int nvertex, 
+			unsigned int maxpred, 
+			unsigned int maxsucc, 
+			unsigned int bitset_size, 
+			__global vertex_t* vertices, 
+			__global int* pred_list, 
+			__global int* succ_list, 
+			__global bitset_t* in, 
+			__global bitset_t* out, 
+			__global bitset_t* use, 
+			__global bitset_t* def,
+			__global bitset_t* bitset_alloc){
 
     unsigned int myid = get_global_id(0);
 
-    // vertices = vs;
-    // nvertex = nv;
-    // maxpred = mpred;
-    // maxsucc = msucc;
-    // pred_list = pred;
-    // succ_list = succ;
-    // bitset_size = bs_size;
-    // in = i;
-    // out = o;
-    // use = u;
-    // def = d;
-
    // computeIn(myid, vertices, nvertex, maxpred, maxsucc, pred_list, succ_list, bitset_size, in, out, use, def);
-
-}
-*/
-
-__kernel void liveness( __global double* input, __global double* output, const unsigned int count)
-{
-   int i = get_global_id(0);
-   if(i < count)
-       output[i] = input[i] * input[i];
 
 }
 
