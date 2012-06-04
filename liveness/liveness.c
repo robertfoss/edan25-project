@@ -142,21 +142,6 @@ int main(int argc, char **argv)
                 exit(1);
         }
 
-/*
-__kernel void liveness(
-__constant unsigned int nvertex, 
-__constant unsigned int maxpred, 
-__constant unsigned int maxsucc, 
-__constant unsigned int bitset_size, 
-__global vertex_t* vertices, 
-__global int* pred_list, 
-__global int* succ_list, 
-__global bitset_t* in, 
-__global bitset_t* out, 
-__global bitset_t* use, 
-__global bitset_t* def)
-*/
-
         // Set the arguments to our compute kernel
 		err  = clSetKernelArg(kernel, 0,  sizeof(unsigned int), &nvertex);
 		err |= clSetKernelArg(kernel, 1,  sizeof(unsigned int), &maxpred);
@@ -195,9 +180,8 @@ __global bitset_t* def)
         clFinish(queue);
 
         // Read back the results from the device to verify the output
-        //err = clEnqueueReadBuffer(queue, tmp_output, CL_TRUE, 0, sizeof(double) * count, results, 0, NULL, NULL );
-        err  = clEnqueueWriteBuffer(queue, buf_use, CL_TRUE, 0, nvertex * bitset_size, use, 0, NULL, NULL);
-        err |= clEnqueueWriteBuffer(queue, buf_def, CL_TRUE, 0, nvertex * bitset_size, def, 0, NULL, NULL);
+        err  = clEnqueueReadBuffer(queue, buf_use, CL_TRUE, 0, nvertex * bitset_size, use, 0, NULL, NULL);
+        err |= clEnqueueReadBuffer(queue, buf_def, CL_TRUE, 0, nvertex * bitset_size, def, 0, NULL, NULL);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
                 exit(1);
