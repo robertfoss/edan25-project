@@ -62,7 +62,7 @@ void bitset_and_not(unsigned int* bs1, unsigned int* bs2, unsigned int bitset_si
 }
 
 
-void print_vertex(vertex_t* v, int nsym, int* in, int* out, int* use, int* def, int bitset_size)
+void print_vertex(vertex_t* v, int nsym, unsigned int bitset_size, bitset_t *in, bitset_t *out, bitset_t *use, bitset_t *def)
 {
         int i;
         int index = v->index;
@@ -114,14 +114,12 @@ void print_vertex(vertex_t* v, int nsym, int* in, int* out, int* use, int* def, 
 }
 
 
-void print_vertices(int nvertex, int maxsucc, vertex_t* vertices, unsigned int* pred_list, unsigned int* succ_list){
-    printf("print_vertices:\n");
+void print_vertices(int nsym, int nvertex, int maxsucc, unsigned int bitset_size, vertex_t* vertices, bitset_t *in, bitset_t *out,
+                    bitset_t *use, bitset_t *def)
+{
+    printf("\nprint_vertices():\n");
     for(int i = 0; i < nvertex; ++i){
-        printf("%d: %d succ[%d] = {", i, vertices[i].succ_count, vertices[i].index);
-        for(unsigned int j = 0; j < vertices[i].succ_count; ++j){
-            printf(" %d", succ_list[i * maxsucc + j]);
-        }
-        printf("}\n");
+        print_vertex(&(vertices[i]), nsym, bitset_size, in, out, use, def);
     }
 }
 
@@ -277,7 +275,7 @@ void create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_
         *vertices = (vertex_t*) malloc(sizeof(vertex_t) * nvertex);
         data_size += sizeof(vertex_t)*nvertex;
 
-        *in  = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
+        *in = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         *out = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         *use = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         *def = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));

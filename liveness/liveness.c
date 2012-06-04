@@ -175,8 +175,7 @@ int main(int argc, char **argv)
                 exit(1);
         }
 
-
         // Print a the results
-		if (print_output) print_vertices(nvertex, maxsucc, vertices, pred_list, succ_list);
+		if (print_output) print_vertices(nsym, nvertex, maxsucc, bitset_size, vertices, in, out, use, def);
 }
 
