@@ -114,8 +114,8 @@ void print_vertex(vertex_t* v, int nsym, int* in, int* out, int* use, int* def, 
 }
 
 
-/*void print_cfg(vertex_t* vertices){
-    printf("print_cfg:\n");
+void print_vertices(int nvertex, int maxsucc, vertex_t* vertices, unsigned int* pred_list, unsigned int* succ_list){
+    printf("print_vertices:\n");
     for(int i = 0; i < nvertex; ++i){
         printf("%d: %d succ[%d] = {", i, vertices[i].succ_count, vertices[i].index);
         for(unsigned int j = 0; j < vertices[i].succ_count; ++j){
@@ -123,7 +123,7 @@ void print_vertex(vertex_t* v, int nsym, int* in, int* out, int* use, int* def, 
         }
         printf("}\n");
     }
-}*/
+}
 
 
 void connect(vertex_t* pred, vertex_t* succ, int maxpred, int maxsucc, unsigned int* pred_list, unsigned int* succ_list)
@@ -263,9 +263,9 @@ void generateUseDef(vertex_t* vertex_list, int nvertex, int nactive, int nsym, b
 }
 
 
-vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t *vertices,
-                          unsigned int *bitset_size, unsigned int* pred_list, unsigned int* succ_list, bitset_t* in, bitset_t *out,
-                          bitset_t* use, bitset_t* def)
+void create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t **vertices,
+                          unsigned int *bitset_size, unsigned int **pred_list, unsigned int **succ_list, bitset_t **in,
+                          bitset_t **out, bitset_t **use, bitset_t **def)
 {
         printf("Creating vertices..\n");
 
@@ -274,19 +274,19 @@ vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int p
 
         unsigned int data_size = 0;
 
-        vertices = (vertex_t*) malloc(sizeof(vertex_t) * nvertex);
+        *vertices = (vertex_t*) malloc(sizeof(vertex_t) * nvertex);
         data_size += sizeof(vertex_t)*nvertex;
 
-        in = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
-        out = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
-        use = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
-        def = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
+        *in = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
+        *out = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
+        *use = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
+        *def = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
 
         data_size = sizeof(bitset_t ) * (*bitset_size) * nvertex * 4;
 
-        pred_list = (unsigned int*) malloc((sizeof(int) * nvertex) * nvertex);
+        *pred_list = (unsigned int*) malloc((sizeof(int) * nvertex) * nvertex);
         data_size += (sizeof(int) * nvertex) * nvertex;
-        succ_list = (unsigned int*) malloc((sizeof(int) * maxsucc) * nvertex);
+        *succ_list = (unsigned int*) malloc((sizeof(int) * maxsucc) * nvertex);
         data_size += (sizeof(int) * nvertex) * maxsucc;
 
         printf("Vertex data size: %.2f KB.\n", ((float)data_size/1024));
@@ -295,15 +295,14 @@ vertex_t* create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int p
         set_seed(rand, 1);
 
         for(int i = 0; i < nvertex; ++i) {
-                vertices[i].index = i;
-                vertices[i].listed = 1; // "in worklist"
-                vertices[i].pred_count = 0;
-                vertices[i].succ_count = 0;
+                (*vertices)[i].index = i;
+                (*vertices)[i].listed = 1; // "in worklist"
+                (*vertices)[i].pred_count = 0;
+                (*vertices)[i].succ_count = 0;
         }
 
-        generateCFG(vertices, nvertex, rand, nvertex, maxsucc, pred_list, succ_list, print_input);
-        generateUseDef(vertices, nvertex, nactive, nsym, use, def, rand, *bitset_size, print_input);
+        generateCFG(*vertices, nvertex, rand, nvertex, maxsucc, *pred_list, *succ_list, print_input);
+        generateUseDef(*vertices, nvertex, nactive, nsym, *use, *def, rand, *bitset_size, print_input);
 
-        return vertices;
 
 }

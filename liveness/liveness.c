@@ -27,7 +27,7 @@ int main(int argc, char **argv)
         unsigned int correct;				// number of correct results returned
 
 		// Variables representing properties of the desired CFG
-		int nsym=100, nvertex=8, maxsucc=4, nactive=10, print_output=0, print_input=0;
+		int nsym=100, nvertex=8, maxsucc=4, nactive=10, print_output=1, print_input=1;
         char* tmp_string = "";
         unsigned int bitset_size;
 
@@ -58,9 +58,11 @@ int main(int argc, char **argv)
 		    }
 		}
 
-        create_vertices(nsym, nvertex, maxsucc, nactive, print_input, vertices, &bitset_size,
-                        pred_list, succ_list, in, out, use, def);
-
+        create_vertices(nsym, nvertex, maxsucc, nactive, print_input, &vertices, &bitset_size,
+                        &pred_list, &succ_list, &in, &out, &use, &def);
+		printf("nsym: %d\nnvertex: %d\nmaxsucc: %d\nnactive: %d\nprint_input: %d\nvertices: %p\nbitset_size: %u\npred_list: %p\n"
+               "succ_list: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\n", 
+               nsym, nvertex, maxsucc, nactive, print_input, vertices, bitset_size, pred_list, succ_list, in, out, use, def);
 
         // Fill our data set with random unsigned int values
         int i = 0;
@@ -138,4 +140,6 @@ int main(int argc, char **argv)
 
         // Print a brief summary detailing the results
         printf("Computed '%d/%d' correct values!\n", correct, count);
+		if (print_output) print_vertices(nvertex, maxsucc, vertices, pred_list, succ_list);
 }
+
