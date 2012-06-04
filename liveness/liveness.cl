@@ -5,7 +5,6 @@
 #pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_extended_atomics : enable
 
-#pragma OPENCL EXTENSION cl_khr_fp64: enable
 
 // TODO: REMOVE BUFF_SIZE
 #ifndef BUFF_SIZE
@@ -14,8 +13,6 @@
 
 typedef unsigned int bitset_t;
 
-__constant int nvertex;
-__constant int bitset_size;
 
 // TODO: REMOVE BUFF_SIZE
 //__private char buffer[BUFF_SIZE];
@@ -25,25 +22,12 @@ typedef struct{
     int listed;
     unsigned int pred_count;
     unsigned int succ_count;
-	int semaphore;
+	__global volatile int semaphore;
 } vertex_t;
 
-/*
-unsigned int myid;
-vertex_t* vertices;
-int maxpred;
-int maxsucc;
-int* pred_list;
-int* succ_list;
-int bitset_size;
-bitset_t* in;
-bitset_t* out;
-bitset_t* use;
-bitset_t* def;*/
 
 
-/*
-void bitset_set_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size){
+void bitset_set_bit(__global bitset_t* arr, int index, unsigned int bit, int bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
     //printf("\nSET\tbit = %d\tbit_offset = %d\tbit_local_index = %d\n", bit, bit_offset, bit_local_index);
@@ -51,7 +35,8 @@ void bitset_set_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size)
     arr[offset] |= (1 << bit_local_index);
 }
 
-int bitset_get_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size){
+
+int bitset_get_bit(__global bitset_t* arr, int index, unsigned int bit, int bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
     //printf("\nbit_offset = %d\tbit_local_index = %d\n", bit_offset, bit_local_index);
@@ -59,17 +44,16 @@ int bitset_get_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size){
 }
 
 
-
-bitset_t* bitset_copy(bitset_t* bs, int bitset_size){
-    bitset_t* new_bs;
-    new_bs = (bitset_t*) buffer;
+inline
+void bitset_copy(__global bitset_t* dest, __global bitset_t* src, int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
-        new_bs[i] = bs[i];
+        dest[i] = src[i];
     }
-    return new_bs;
 }
 
-int bitset_equals(bitset_t* bs1, bitset_t* bs2, int bitset_size){
+
+inline
+int bitset_equals(__global bitset_t* bs1, __global bitset_t* bs2, unsigned int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
         if(bs1[i] != bs2[i]){
             return 0;
@@ -78,14 +62,17 @@ int bitset_equals(bitset_t* bs1, bitset_t* bs2, int bitset_size){
     return 1;
 }
 
-void bitset_or(bitset_t* bs1, bitset_t* bs2, int bitset_size){
+
+inline
+void bitset_or(__global bitset_t* bs1, __global bitset_t* bs2, unsigned int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
         bs1[i] |= bs2[i];
     }
 }
 
 
-void bitset_and_not(bitset_t* bs1, bitset_t* bs2, int bitset_size){
+inline
+void bitset_and_not(__global bitset_t* bs1, __global bitset_t* bs2, unsigned int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
         unsigned int tmp = bs1[i] & bs2[i];
         tmp = ~tmp;
@@ -93,8 +80,17 @@ void bitset_and_not(bitset_t* bs1, bitset_t* bs2, int bitset_size){
     }
 }
 
+inline
+void bitset_clear(__global bitset_t* bs, unsigned int bitset_size)
+{
+	for(unsigned int i = 0; i < bitset_size; ++i){
+		bs[i] = 0;
+	}
+}
 
-int acquire_locks(vertex_t* v, vertex_t* vertices, int maxpred, int maxsucc, int* pred_list, int* succ_list){
+
+int acquire_locks(__global vertex_t* v, int maxpred, int maxsucc, __global vertex_t* vertices, __global int* pred_list,
+                  __global int* succ_list){
 
     int s;
     int p;
@@ -102,37 +98,37 @@ int acquire_locks(vertex_t* v, vertex_t* vertices, int maxpred, int maxsucc, int
     int index;
     int fail = 0;
 
-    if(atomic_xchg(&v.semaphore, 1)){
-        atomic_xchg(&v.semaphore, 0);
+    if(atomic_xchg(&(v->semaphore), 1)){
+        atomic_xchg(&(v->semaphore), 0);
         return 0;
     }
 
     for(s = 0; s < v->succ_count; ++s){
-        index = succ[v_index * maxsucc + s];
-        if(atomic_xchg(&vertices[index].semaphore, 1)){
+        index = succ_list[v_index * maxsucc + s];
+        if(atomic_xchg(&(vertices[index].semaphore), 1)){
             fail = 1;
             break;
         }
     }
 
     for(int i = 0; i < s && fail; ++i){
-        index = succ[v_index * maxsucc + i];
-        atomic_xchg(&vertices[index].semaphore, 0);
+        index = succ_list[v_index * maxsucc + i];
+        atomic_xchg(&(vertices[index].semaphore), 0);
     }
 
     if(fail) return 0;
 
     for(p = 0; p < v->pred_count; ++p){
-        index = pred[v_index * maxpred + p];
-        if(atomic_xchg(&vertices[index].semaphore, 1)){
+        index = pred_list[v_index * maxpred + p];
+        if(atomic_xchg(&(vertices[index].semaphore), 1)){
             fail = 1;
             break;
         }
     }
 
     for(int i = 0; i < p && fail; ++i){
-        index = pred[v_index * maxpred + i];
-        atomic_xchg(&vertices[index].semaphore, 0);
+        index = pred_list[v_index * maxpred + i];
+        atomic_xchg(&(vertices[index].semaphore), 0);
     }
 
     if(fail) return 0;
@@ -141,10 +137,11 @@ int acquire_locks(vertex_t* v, vertex_t* vertices, int maxpred, int maxsucc, int
 }
 
 
-int acquire_next(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred, int maxsucc, int* pred_list, int* succ_list){
+int acquire_next(unsigned int myid, int nvertex, int maxpred, int maxsucc, __global vertex_t* vertices, __global int* pred_list,
+                 __global int* succ_list){
 
     int c = myid;
-    vertex_t* v;
+    __global vertex_t* v;
     int listed_left = 0;
 
     while(1){
@@ -153,9 +150,9 @@ int acquire_next(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred
             c = 0;
         }
 
-        v = vertices[c];
+        v = &vertices[c];
 
-        if(v->listed && !v->semaphore && acquire_locks(v, vertices, maxpred, maxsucc, pred_list, succ_list)){
+        if(v->listed && !v->semaphore && acquire_locks(v, maxpred, maxsucc, vertices, pred_list, succ_list)){
             v->listed = 0;
             return v->index;
         } else if(v->listed){
@@ -175,7 +172,7 @@ int acquire_next(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred
 }
 
 
-void free_locks(vertex_t* v, vertex_t* vertices, int maxpred, int maxsucc){
+void free_locks(__global vertex_t* v, __global vertex_t* vertices, int maxpred, int maxsucc){
 
     int v_index = v->index;
 
@@ -189,7 +186,8 @@ void free_locks(vertex_t* v, vertex_t* vertices, int maxpred, int maxsucc){
     atomic_xchg(&vertices[v_index].semaphore, 0);
 }
 
-void acquire_lock(__global uint_2* x) {
+
+void acquire_lock(__global vertex_t* x) {
    int occupied = atomic_xchg(&x[0].semaphore, 1);
    while(occupied > 0)
    {
@@ -199,88 +197,64 @@ void acquire_lock(__global uint_2* x) {
 
 
 
-void release_lock(__global uint_2* x)
+void release_lock(__global vertex_t* x)
 {
-   int prevVal = atomic_xchg(&x[0].semaphore, 0);
+   int prev_val = atomic_xchg(&x[0].semaphore, 0);
 }
 
 
-unsigned int gcd(unsigned int a, unsigned int b)
-{
-    while(1)
-    {
-        a = a % b;
-		if( a == 0 )
-			return b;
-		b = b % a;
+void computeIn(unsigned int myid, int nvertex, int maxpred, int maxsucc, unsigned int bitset_size, __global vertex_t* vertices,
+               __global int* pred_list, __global int* succ_list,  __global bitset_t* in, __global bitset_t* out,
+               __global bitset_t* use, __global bitset_t* def, __global bitset_t* bitset_alloc){
 
-        if( b == 0 )
-			return a;
-    }
-}
-
-
-void computeIn(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred, int maxsucc, int* pred_list, int* succ_list, int bitset_size,  bitset_t* in, bitset_t* out, bitset_t* use, bitset_t* def){
-
-    int u_index = acquire_next(myid, vertices, nvertex, mexpred, maxsucc, pred_list, succ_list);
+    int u_index = acquire_next(myid, nvertex, maxpred, maxsucc, vertices, pred_list, succ_list);
     if(u_index == -1){
         return;
     }
 
-    vertex_t* u = vertices[u_index];
+    __global vertex_t* u = &vertices[u_index];
 //    u->listed = 0;
 
-    vertex_t* v;
+    __global vertex_t* v;
     int v_index;
     int bs_u_index = u_index * bitset_size;
     int bs_v_index;
 
     for(int i = 0; i < u->succ_count; ++i){
-        v_index = succs[u_index * maxsucc + i];
-        v = vertices[v->index];
+        v_index = succ_list[u_index * maxsucc + i];
+        v = &vertices[v->index];
         bs_v_index = v_index * bitset_size;
-        bitset_or(out[bs_u_index], in[bs_v_index]);
+        bitset_or(&out[bs_u_index], &in[bs_v_index], bitset_size);
     }
 
-    bitset_t* old = bitset_copy(in[bs_u_index]);
+	__global bitset_t* old = &(bitset_alloc[bs_u_index]);
+	bitset_copy(old, &(in[bs_u_index]), bitset_size);
 
-    memset(in[bs_u_index], 0, bitset_size);
-    bitset_or(in[bs_u_index], out[bs_u_index]);
-    bitset_and_not(in[bs_u_index], def[bs_u_index]);
-    bitset_or(in[bs_u_index], use[bs_u_index]);
+    bitset_clear(&(in[bs_u_index]), bitset_size);
+    bitset_or(&(in[bs_u_index]), &(out[bs_u_index]), bitset_size);
+    bitset_and_not(&(in[bs_u_index]), &(def[bs_u_index]), bitset_size);
+    bitset_or(&(in[bs_u_index]), &(use[bs_u_index]), bitset_size);
 
-    if(!bitset_equals(in[bs_u_index], old)){
+    if(!bitset_equals(&(in[bs_u_index]), old, bitset_size)){
         for(int i = 0; i < u->pred_count; ++i){
-            v_index = preds[u_index * maxpred + i];
-            v = vertices[v_index];
+            v_index = pred_list[u_index * maxpred + i];
+            v = &vertices[v_index];
             if(!v->listed){
                 v->listed = 1;
             }
         }
     }
 
-    free(old);
     free_locks(u, vertices, maxpred, maxsucc);
 }
 
-*/
-__kernel void liveness(
-			unsigned int nvertex, 
-			unsigned int maxpred, 
-			unsigned int maxsucc, 
-			unsigned int bitset_size, 
-			__global vertex_t* vertices, 
-			__global int* pred_list, 
-			__global int* succ_list, 
-			__global bitset_t* in, 
-			__global bitset_t* out, 
-			__global bitset_t* use, 
-			__global bitset_t* def,
-			__global bitset_t* bitset_alloc){
+__kernel void liveness(unsigned int nvertex, unsigned int maxpred, unsigned int maxsucc, 
+                       unsigned int bitset_size, __global vertex_t* vertices, __global unsigned int *pred_list, 
+                       __global unsigned int *succ_list, __global bitset_t *in, __global bitset_t *out, 
+                       __global bitset_t *use, __global bitset_t *def, __global bitset_t *bitset_alloc){
 
-    unsigned int myid = get_global_id(0);
+	unsigned int myid = get_global_id(0);
 
-   // computeIn(myid, vertices, nvertex, maxpred, maxsucc, pred_list, succ_list, bitset_size, in, out, use, def);
-
+	computeIn(myid, nvertex, maxpred, maxsucc, bitset_size, vertices, pred_list, succ_list, in, out, use, def, bitset_alloc);
 }
 
