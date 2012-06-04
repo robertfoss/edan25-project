@@ -11,6 +11,7 @@
 #define BUFF_SIZE (1024)
 #endif
 
+/*
 typedef unsigned int bitset_t;
 
 __constant int nvertex;
@@ -26,7 +27,7 @@ typedef struct{
 	int semaphore;
 } vertex_t;
 
-/*unsigned int myid;
+unsigned int myid;
 vertex_t* vertices;
 int maxpred;
 int maxsucc;
@@ -39,6 +40,7 @@ bitset_t* use;
 bitset_t* def;*/
 
 
+/*
 void bitset_set_bit(bitset_t* arr, int index, unsigned int bit, int bitset_size){
     unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
     unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
@@ -64,7 +66,6 @@ bitset_t* bitset_copy(bitset_t* bs, int bitset_size){
     }
     return new_bs;
 }
-/*
 
 int bitset_equals(bitset_t* bs1, bitset_t* bs2, int bitset_size){
     for(unsigned int i = 0; i < bitset_size; ++i){
@@ -259,34 +260,33 @@ void computeIn(unsigned int myid, vertex_t* vertices, int nvertex, int maxpred, 
     free(old);
     free_locks(u, vertices, maxpred, maxsucc);
 }
-*/
 
 __kernel void liveness(__global vertex_t* vertices, __global int nvertex, int maxpred, int maxsucc, __global int* pred_list, __global int* succ_list, int bitset_size, __global bitset_t* in, __global bitset_t* out, __global bitset_t* use, __global bitset_t* def) {
 
     unsigned int myid = get_global_id(0);
 
-    /*vertices = vs;
-    nvertex = nv;
-    maxpred = mpred;
-    maxsucc = msucc;
-    pred_list = pred;
-    succ_list = succ;
-    bitset_size = bs_size;
-    in = i;
-    out = o;
-    use = u;
-    def = d;*/
+    // vertices = vs;
+    // nvertex = nv;
+    // maxpred = mpred;
+    // maxsucc = msucc;
+    // pred_list = pred;
+    // succ_list = succ;
+    // bitset_size = bs_size;
+    // in = i;
+    // out = o;
+    // use = u;
+    // def = d;
 
    // computeIn(myid, vertices, nvertex, maxpred, maxsucc, pred_list, succ_list, bitset_size, in, out, use, def);
 
 }
+*/
 
-
-/*__kernel void liveness( __global double* input, __global double* output, const unsigned int count)
+__kernel void liveness( __global double* input, __global double* output, const unsigned int count)
 {
    int i = get_global_id(0);
    if(i < count)
        output[i] = input[i] * input[i];
 
 }
-*/
+
