@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 
 		// Variables representing properties of the desired CFG
-		int nsym=100, nvertex=8, maxsucc=4, nactive=10, print_output=1, print_input=1, maxpred=8;
+		int nsym=100, nvertex=8, maxsucc=4, nactive=10, print_output=1, print_input=0, maxpred=8;
         char* tmp_string = "";
         unsigned int bitset_size;
 
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 		unsigned int *pred_list=NULL, *succ_list=NULL;
 		
 		if(argc != 7){
-		    printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n\n");
+		    printf("\nWrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n\n");
 		} else {
 		    sscanf(argv[1], "%d", &nsym);
 		    sscanf(argv[2], "%d", &nvertex);
@@ -168,12 +168,15 @@ int main(int argc, char **argv)
         clFinish(queue);
 
         // Read back the results from the device to verify the output
-        err  = clEnqueueReadBuffer(queue, buf_use, CL_TRUE, 0, nvertex * bitset_size, use, 0, NULL, NULL);
-        err |= clEnqueueReadBuffer(queue, buf_def, CL_TRUE, 0, nvertex * bitset_size, def, 0, NULL, NULL);
+        err  = clEnqueueReadBuffer(queue, buf_in, CL_TRUE, 0, nvertex * bitset_size, in, 0, NULL, NULL);
+        err |= clEnqueueReadBuffer(queue, buf_out, CL_TRUE, 0, nvertex * bitset_size, out, 0, NULL, NULL);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
                 exit(1);
         }
+
+        // Wait for the command commands to get serviced before reading back results
+        clFinish(queue);
 
         // Print a the results
 		if (print_output) print_vertices(nsym, nvertex, maxsucc, bitset_size, vertices, in, out, use, def);
