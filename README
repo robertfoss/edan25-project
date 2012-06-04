@@ -1,17 +1,26 @@
-Liveness analysis in OpenCL.
+Liveness analysis in OpenCL
+===========================
 
-Compile and execute:
+Compile and execute
+-------------------
 cd liveness
 make
 ./liveness
 
 
-Supporting directories:
+Supporting directories
+----------------------
 opencl11 - OpenCL 1.1 header files
 opencl12 - OpenCL 1.2 header files
 
+Required software (Debian)
+--------------------------
+ * GPU drivers supporting OpenCL. Nvidia propietary or fglrx.
+ * opencl-headers
+ * mesa-common-dev
 
-License:
+License
+-------
 This code is licensed under the GNU GPL2 open source license. 
 Some of the included headers are differently licensed, if so it is noted in the respective file heads.
 
