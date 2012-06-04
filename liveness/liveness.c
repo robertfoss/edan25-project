@@ -60,9 +60,10 @@ int main(int argc, char **argv)
 
         create_vertices(nsym, nvertex, maxsucc, nactive, print_input, &vertices, &bitset_size,
                         &pred_list, &succ_list, &in, &out, &use, &def);
-		printf("nsym: %d\nnvertex: %d\nmaxsucc: %d\nnactive: %d\nprint_input: %d\nvertices: %p\nbitset_size: %u\npred_list: %p\n"
-               "succ_list: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\n", 
-               nsym, nvertex, maxsucc, nactive, print_input, vertices, bitset_size, pred_list, succ_list, in, out, use, def);
+		// Print results of create_vertices().s
+		//printf("nsym: %d\nnvertex: %d\nmaxsucc: %d\nnactive: %d\nprint_input: %d\nvertices: %p\nbitset_size: %u\npred_list: %p\n"
+        //       "succ_list: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\n", 
+        //       nsym, nvertex, maxsucc, nactive, print_input, vertices, bitset_size, pred_list, succ_list, in, out, use, def);
 
         // Fill our data set with random unsigned int values
         int i = 0;
