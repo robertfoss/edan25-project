@@ -277,7 +277,7 @@ void create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_
         *vertices = (vertex_t*) malloc(sizeof(vertex_t) * nvertex);
         data_size += sizeof(vertex_t)*nvertex;
 
-        *in = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
+        *in  = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         *out = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         *use = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
         *def = (bitset_t*) calloc(nvertex * (*bitset_size), sizeof(bitset_t));
