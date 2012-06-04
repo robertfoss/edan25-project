@@ -63,9 +63,7 @@ int main(int argc, char **argv)
         //       nsym, nvertex, maxsucc, nactive, print_input, vertices, bitset_size, pred_list, succ_list, in, out, use, def);
 
 
-        char build_options[50] = "";
-        //sprintf(build_options, "-D BUFF_SIZE=%u", bitset_size); //TODO: REMOVE WITH BUFF_SIZE
-        setup_opencl("liveness.cl", "liveness", build_options, &device_id, &kernel, &context, &queue);
+        setup_opencl("liveness.cl", "liveness", "", &device_id, &kernel, &context, &queue);
 
 
 		// TODO: SWITCH TO CL_MEM_READ_ONLY AND CL_MEM_WRITE_ONLY WHERE APPROPRIATE

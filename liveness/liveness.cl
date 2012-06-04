@@ -6,16 +6,7 @@
 #pragma OPENCL EXTENSION cl_khr_local_int32_extended_atomics : enable
 
 
-// TODO: REMOVE BUFF_SIZE
-#ifndef BUFF_SIZE
-#define BUFF_SIZE (1024)
-#endif
-
 typedef unsigned int bitset_t;
-
-
-// TODO: REMOVE BUFF_SIZE
-//__private char buffer[BUFF_SIZE];
 
 typedef struct{
     int index;
