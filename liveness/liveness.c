@@ -19,14 +19,8 @@ int main(int argc, char **argv)
         cl_command_queue queue;				// compute command queue
         cl_kernel kernel;					// compute kernel
 
-        cl_mem tmp_input;					// device memory used for the input array
-        cl_mem tmp_output;					// device memory used for the output array
-
 		cl_mem buf_vertices, buf_pred_list, buf_succ_list, buf_in, buf_out, buf_use, buf_def, buf_bitset_alloc;
 
-        double data[DATA_SIZE];				// original data set given to device
-        double results[DATA_SIZE];			// results returned from device
-        unsigned int correct;				// number of correct results returned
 
 		// Variables representing properties of the desired CFG
 		int nsym=100, nvertex=8, maxsucc=4, nactive=10, print_output=1, print_input=1, maxpred=8;
@@ -68,11 +62,6 @@ int main(int argc, char **argv)
         //       "succ_list: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\n", 
         //       nsym, nvertex, maxsucc, nactive, print_input, vertices, bitset_size, pred_list, succ_list, in, out, use, def);
 
-        // Fill our data set with random unsigned int values
-        int i = 0;
-        unsigned int count = DATA_SIZE;
-        for(i = 0; i < count; i++)
-                data[i] = (double) (rand() / (double)RAND_MAX);
 
         char build_options[50] = "";
         //sprintf(build_options, "-D BUFF_SIZE=%u", bitset_size); //TODO: REMOVE WITH BUFF_SIZE
@@ -169,7 +158,8 @@ int main(int argc, char **argv)
 
         // Execute the kernel over the entire range of our 1d input data set
         // using the maximum number of work group items for this device
-        global = count;
+        global = nvertex;
+		global = 0; // This can't be the right way?
         err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
         if (err != CL_SUCCESS) {
                 printf("Error: Failed to execute kernel: %s\n", ocl_error_string(err));
