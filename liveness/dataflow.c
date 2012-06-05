@@ -428,18 +428,19 @@ void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem 
 	cl_event events[3];
 
     // Write our data set into the input array in device memory
-    err  = clEnqueueWriteBuffer(queue, *buf_bs1, CL_TRUE, 0, sizeof(unsigned int) * bitset_subsets, bs1, 0, NULL, &(events[0]));
-    err |= clEnqueueWriteBuffer(queue, *buf_bs2, CL_TRUE, 0, sizeof(unsigned int) * bitset_subsets, bs2, 0, NULL, &(events[1]));
+    err  = clEnqueueWriteBuffer(queue, *buf_bs1, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, bs1, 0, NULL, &(events[0]));
+    err |= clEnqueueWriteBuffer(queue, *buf_bs2, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, bs2, 0, NULL, &(events[1]));
     if (err != CL_SUCCESS) {
             printf("Error: Failed to write to GPU memory: %s\n", ocl_error_string(err));
             exit(err);
     }
-/*
+
 	err = clWaitForEvents(2, events);
     if (err != CL_SUCCESS) {
             printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
             exit(err);
-    }*/
+    }
+
 	
     // Set the arguments to our compute kernel
 	err  = clSetKernelArg(or_kernel, 0, sizeof(cl_mem), buf_bs1);
@@ -466,16 +467,10 @@ void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem 
     }
 
     // Read back the results from the device to verify the output
-    err  = clEnqueueReadBuffer(queue, *buf_bs1, CL_TRUE, 0, nvertex * bitset_subsets, bs1, 0, NULL, &(events[1]));
+    err  = clEnqueueReadBuffer(queue, *buf_bs1, CL_TRUE, 0, nvertex * bitset_subsets, bs1, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
-    }
-
-	err = clWaitForEvents(1, &events[1]);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
-            exit(err);
     }
 }
 
@@ -486,8 +481,8 @@ void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_me
 	cl_event events[3];
 
     // Write our data set into the input array in device memory
-    err  = clEnqueueWriteBuffer(queue, *buf_bs1, CL_TRUE, 0, sizeof(unsigned int) * bitset_subsets, bs1, 0, NULL, &(events[0]));
-    err |= clEnqueueWriteBuffer(queue, *buf_bs2, CL_TRUE, 0, sizeof(unsigned int) * bitset_subsets, bs2, 0, NULL, &(events[1]));
+    err  = clEnqueueWriteBuffer(queue, *buf_bs1, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, bs1, 0, NULL, &(events[0]));
+    err |= clEnqueueWriteBuffer(queue, *buf_bs2, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, bs2, 0, NULL, &(events[1]));
     if (err != CL_SUCCESS) {
             printf("Error: Failed to write to GPU memory: %s\n", ocl_error_string(err));
             exit(err);
@@ -498,6 +493,7 @@ void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_me
             printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
             exit(err);
     }
+
 	
     // Set the arguments to our compute kernel
 	err  = clSetKernelArg(nand_kernel, 0, sizeof(cl_mem), buf_bs1);
@@ -528,12 +524,6 @@ void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_me
     if (err != CL_SUCCESS) {
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
-    }
-
-	err = clWaitForEvents(1, &events[1]);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
-            exit(err);
     }
 }
 
@@ -631,8 +621,11 @@ void liveness(list_t* vertex_list, int nthread){
         pthread_join(thread[i], NULL);
     }
 	end = sec();
-    printf("c runtime = %f s\n", (end - begin));
-
+#ifdef USE_OPENCL
+	printf("OpenCL runtime: %f s\n", (end - begin));
+#else
+	printf("CPU runtime: %f s\n", (end - begin));
+#endif
 }
 
 int main(int ac, char** av){
