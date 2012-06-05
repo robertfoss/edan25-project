@@ -9,24 +9,13 @@
 #include "CL/cl.h"
 #include "opencl.h"
 #include "util.h"
-
-
-void setup_opencl(const char* cl_source_filename, const char* cl_source_main, const char* cl_compile_option,
-                  cl_device_id* device_id_ptr, cl_kernel* kernel_ptr, cl_context* context_ptr, cl_command_queue* queue_ptr)
+void setup_queue(cl_device_id* device_id, cl_context* context, cl_command_queue* queue)
 {
-        cl_int err = CL_SUCCESS;			// error code returned from api calls
+        cl_int err;                            // error code returned from api calls
 
-        cl_platform_id platform_id;         // compute device id
-        cl_program program;                 // compute program
+        cl_platform_id platform_id;				// compute device id
         cl_device_id devices[MAX_RESOURCES];
         cl_platform_id platforms[MAX_RESOURCES];
-
-        // *_ptr cannot be used directly as it causes a SEGFAULT in clCreateCommandQueue() on some AMD systems. //TODO: Fixme?
-        cl_device_id device_id;				// device id running computation
-        cl_context context;					// compute context
-        cl_command_queue queue;				// compute command queue
-        cl_kernel kernel;					// compute kernel
-
 
 
         unsigned int best_platform = 0;
@@ -35,7 +24,7 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, co
 
         if(!get_best_device(&best_platform, &best_device)) {
                 printf("No suitable device was found! Try using an OpenCL1.1 compatible device.\n");
-                exit(err);
+                exit(1);
         }
         printf("Initiating platform-%d device-%d.\n", best_platform, best_device);
 
@@ -52,67 +41,73 @@ void setup_opencl(const char* cl_source_filename, const char* cl_source_main, co
         // Device
         err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, sizeof(devices), devices, NULL); //NULL, ignore number returned devices.
         if (err != CL_SUCCESS) {
-                printf("Error: getting device ids: %s\n", ocl_error_string(err));
+                printf("Error getting device ids: %s\n", ocl_error_string(err));
                 exit(err);
         }
-        device_id = devices[best_device];
+        *device_id = devices[best_device];
 
         // Context
-        context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+        *context = clCreateContext(0, 1, device_id, NULL, NULL, &err);
         if (err != CL_SUCCESS) {
-                printf("Error: creating context: %s.", ocl_error_string(err));
+                printf("Error creating context: %s.", ocl_error_string(err));
                 exit(err);
         }
 
         // Command-queue
-        queue = clCreateCommandQueue(context, device_id, 0, &err);
+        *queue = clCreateCommandQueue(*context, *device_id, 0, &err);
         if (err != CL_SUCCESS) {
-                printf("Error: creating command queue: %s", ocl_error_string(err));
+                printf("Error creating command queue: %s", ocl_error_string(err));
                 exit(err);
         }
+}
 
-        // Read .cl source into memory
-        int cl_source_len = 0;
-        char* cl_source = file_contents(cl_source_filename, &cl_source_len);
+void setup_kernel(const char* cl_source_filename, const char* cl_source_main, cl_device_id *device_id, cl_context *context, cl_kernel *kernel)
+{
+	cl_int err;								// error code returned from api calls
+	cl_program program;						// compute program
+
+	// Read .cl source into memory
+	int cl_source_len = 0;
+	char* cl_source = file_contents(cl_source_filename, &cl_source_len);
 
 
-        // Create thes compute program from the source buffer
-        program = clCreateProgramWithSource(context, 1, (const char **) &cl_source, NULL, &err);
-        if (err != CL_SUCCESS) {
-                printf("Error: Failed to create compute program: %s", ocl_error_string(err));
-                exit(err);
-        }
+	// Create thes compute program from the source buffer
+	program = clCreateProgramWithSource(*context, 1, (const char **) &cl_source, NULL, &err);
+	if (err != CL_SUCCESS) {
+		    printf("Error: Failed to create compute program: %s", ocl_error_string(err));
+		    exit(err);
+	}
 
-        // Build the program executable
-        err = clBuildProgram(program, 0, NULL, cl_compile_option, NULL, NULL);
-        if (err != CL_SUCCESS) {
-                printf("Error: Failed to build program executable: %s\n",  ocl_error_string(err));
-
+	// Build the program executable
+	err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+	if (err != CL_SUCCESS) {
                 char* build_log;
                 size_t log_size;
                 // First call to know the proper size
-                clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+                clGetProgramBuildInfo(program, *device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
                 build_log = malloc(sizeof(char)*(log_size+1));
                 // Second call to get the log
-                clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
+                clGetProgramBuildInfo(program, *device_id, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
                 build_log[log_size] = '\0';
                 printf("%s\n", build_log);
                 free(build_log);
 
                 exit(1);
-        }
+	}
 
-        // Create the compute kernel in the program we wish to run
-        kernel = clCreateKernel(program, cl_source_main, &err);
-        if (!kernel || err != CL_SUCCESS) {
-                printf("Error: Failed to create compute kernel!\n");
-                exit(1);
-        }
+	// Create the compute kernel in the program we wish to run
+	*kernel = clCreateKernel(program, cl_source_main, &err);
+	if (!kernel || err != CL_SUCCESS) {
+		    printf("Error: Failed to create compute kernel!\n");
+		    exit(1);
+	}
+}
 
-        *device_id_ptr = device_id;				// device id running computation
-        *context_ptr = context;					// compute context
-        *queue_ptr = queue;				// compute command queue
-        *kernel_ptr = kernel;					// compute kernel
+void setup_opencl(const char* cl_source_filename, const char* cl_source_main, cl_device_id* device_id,
+				 cl_kernel* kernel, cl_context* context, cl_command_queue* queue)
+{
+        setup_queue(device_id, context, queue);
+		setup_kernel(cl_source_filename, cl_source_main, device_id, context, kernel);
 }
 
 /*
@@ -130,6 +125,7 @@ void destroy_opencl(cl_program* program, cl_kernel* kernel, cl_context* context,
 
 /*
  * Returns 0 if no suitable device was found.
+ * Makes sure that the device supports 64-bit floats.
  */
 int get_best_device(unsigned int *ret_platform, unsigned int *ret_device)
 {
@@ -159,7 +155,7 @@ int get_best_device(unsigned int *ret_platform, unsigned int *ret_device)
                         if (extensions_len > 0) {
                                 an_extension = strtok(extensions, " ");
                                 while (an_extension != NULL) {
-                                        if( strcmp( "cl_khr_global_int32_base_atomics", an_extension) == 0) {
+                                        if( strcmp( "cl_khr_fp64", an_extension) == 0) {
                                                 unsigned long long score = clockFreq*numberOfCores+amountOfMemory;
                                                 if(score>best_score) {
                                                         *ret_platform = i;
