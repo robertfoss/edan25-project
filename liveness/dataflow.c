@@ -651,7 +651,6 @@ int main(int ac, char** av){
 	printf("OpenCL: DISABLED\n");
 #endif
 
-
 	if(ac != 8){
 	    printf("\nWrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n\n");
 	} else {
@@ -678,6 +677,7 @@ int main(int ac, char** av){
 	}
     alloc_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
 	bitset_subsets = sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1);
+	printf("Subsets per bitset: %u\n", bitset_subsets);
 
 	//
 	// Setup OpenCL
