@@ -1,4 +1,0 @@
-Bugs!
------
-
- * Variable bitset_size is used to represent both number of bitset_t and size in bytes.
