@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <ctype.h>
+#include <ctype.h> // only used for tolower()
 
 #include "CL/cl.h"
 
@@ -179,6 +179,6 @@ int main(int argc, char **argv)
         clFinish(queue);
 
         // Print a the results
-		if (print_output) print_vertices(nsym, nvertex, maxsucc, bitset_size, vertices, in, out, use, def);
+		if (print_output) print_vertices(nsym, nvertex, bitset_size, vertices, in, out, use, def);
 }
 

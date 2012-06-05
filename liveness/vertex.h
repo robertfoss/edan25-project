@@ -15,7 +15,7 @@ typedef struct {
 void create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_input, vertex_t **vertices,
                           unsigned int *bitset_size, unsigned int **pred_list, unsigned int **succ_list, bitset_t **in,
                           bitset_t **out, bitset_t **use, bitset_t **def);
-void print_vertices(int nsym, int nvertex, int maxsucc, unsigned int bitset_size, vertex_t* vertices, bitset_t *in, bitset_t *out,
+void print_vertices(int nsym, int nvertex, unsigned int bitset_size, vertex_t* vertices, bitset_t *in, bitset_t *out,
                     bitset_t *use, bitset_t *def);
 
 

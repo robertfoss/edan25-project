@@ -114,7 +114,7 @@ void print_vertex(vertex_t* v, int nsym, unsigned int bitset_size, bitset_t *in,
 }
 
 
-void print_vertices(int nsym, int nvertex, int maxsucc, unsigned int bitset_size, vertex_t* vertices, bitset_t *in, bitset_t *out,
+void print_vertices(int nsym, int nvertex, unsigned int bitset_size, vertex_t* vertices, bitset_t *in, bitset_t *out,
                     bitset_t *use, bitset_t *def)
 {
     printf("\nprint_vertices():\n");
@@ -287,7 +287,7 @@ void create_vertices(int nsym, int nvertex, int maxsucc, int nactive, int print_
         *succ_list = (unsigned int*) malloc((sizeof(int) * maxsucc) * nvertex);
         data_size += (sizeof(int) * nvertex) * maxsucc;
 
-        printf("Vertex data size: %.2f KB.\n", ((float)data_size/1024));
+        printf("Vertex data size: %.2f KB.\n\n", ((float)data_size/1024));
 
         random_t *rand = new_random();
         set_seed(rand, 1);
