@@ -257,18 +257,8 @@ void computeIn(Vertex* u, list_t* worklist, cl_mem *buf_or_bs1, cl_mem *buf_or_b
 	}while(tmp_list->next != tmp_list);
 
 	unsigned int* old = bitset_copy(u->in);
-    /*printf("old:\n");
-    bitset_print(old);*/
-	u->in = calloc( alloc_size, sizeof(unsigned int));//bitset_create();
-	bitset_or(u->in, u->out, buf_or_bs1, buf_or_bs2);
-    /*printf("after or #1:\n");
-    bitset_print(u->in);*/
-	bitset_and_not(u->in, u->def, buf_nand_bs1, buf_nand_bs2);
-    /*printf("after and not:\n");
-    bitset_print(u->in);*/
-	bitset_or(u->in, u->use, buf_or_bs1, buf_or_bs2);
-    /*printf("after or #2:\n");
-    bitset_print(u->in);*/
+
+	bitset_megaop(u->in, u->out, u->use, u->def, &buf_megaop_in, &buf_megaop_out, &buf_megaop_use, &buf_megaop_def);
 
 	if(!bitset_equals(u->in, old)){
 		tmp_list = u->pred_list;
