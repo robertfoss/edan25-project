@@ -19,7 +19,6 @@ unsigned int bitset_subsets;
 
 cl_device_id device_id;				// device id running computation
 cl_context context;					// compute context
-pthread_mutex_t context_mtx = PTHREAD_MUTEX_INITIALIZER;
 cl_command_queue queue;				// compute command queue
 cl_kernel or_kernel;				// compute kernel
 cl_kernel nand_kernel;				// compute kernel
@@ -207,33 +206,27 @@ bool bitset_equals(unsigned int* bs1, unsigned int* bs2){
 }
 
 void bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *mem1, cl_mem *mem2){
-	pthread_mutex_lock(&context_mtx);
     for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
         bs1[i] |= bs2[i];
     }
-	pthread_mutex_unlock(&context_mtx);
 }
 
 void bitset_and_not(unsigned int* bs1, unsigned int* bs2, cl_mem *mem1, cl_mem *mem2){
-	pthread_mutex_lock(&context_mtx);
     for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
         unsigned int tmp = bs1[i] & bs2[i];
         tmp = ~tmp;
         bs1[i] = tmp & bs1[i];
     }
-	pthread_mutex_unlock(&context_mtx);
 }
 
 void bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, unsigned int* def,
                       cl_mem *buf_in, cl_mem *buf_out, cl_mem *buf_use, cl_mem *buf_def)
 {
-	pthread_mutex_lock(&context_mtx);
     for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
 		in[i] |= out[i];
 		in[i]  = in[i] & (~(in[i] & def[i]));
 		in[i] |= use[i];
 	}
-	pthread_mutex_unlock(&context_mtx);
 }
 
 void computeIn(Vertex* u, list_t* worklist, cl_mem *buf_or_bs1, cl_mem *buf_or_bs2, cl_mem *buf_nand_bs1, cl_mem *buf_nand_bs2){
@@ -440,7 +433,6 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, random_t* r){
 
 void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem *buf_bs2)
 {
-	pthread_mutex_lock(&context_mtx);
 	cl_int err;
 	cl_event events[3];
 
@@ -479,13 +471,11 @@ void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem 
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
     }
-	pthread_mutex_unlock(&context_mtx);
 }
 
 
 void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem *buf_bs2)
 {
-	pthread_mutex_lock(&context_mtx);
 	cl_int err;
 	cl_event events[3];
 
@@ -524,13 +514,11 @@ void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_me
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
     }
-	pthread_mutex_unlock(&context_mtx);
 }
 
 void cl_bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, unsigned int* def,
                       cl_mem *buf_in, cl_mem *buf_out, cl_mem *buf_use, cl_mem *buf_def)
 {
-	pthread_mutex_lock(&context_mtx);
 	cl_int err;
 	cl_event events[3];
 
@@ -572,7 +560,6 @@ void cl_bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, un
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
     }
-	pthread_mutex_unlock(&context_mtx);
 }
 
 typedef struct thread_struct {
@@ -705,7 +692,6 @@ int main(int ac, char** av){
 	//
 	// Setup OpenCL
 	cl_int err;
-	pthread_mutex_lock(&context_mtx);
 	setup_queue(&device_id, &context, &queue);
 	setup_kernel("bitset.cl", "bitset_or", &device_id, &context, &or_kernel);
 	setup_kernel("bitset.cl", "bitset_nand", &device_id, &context, &nand_kernel);
@@ -784,7 +770,6 @@ int main(int ac, char** av){
             printf("Error: Failed to allocate device buf_megaop_def memory: %s\n", ocl_error_string(err));
             exit(1);
     }
-	pthread_mutex_unlock(&context_mtx);
 
 
 	//
