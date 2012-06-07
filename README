@@ -2,8 +2,7 @@ Liveness analysis in OpenCL
 
 Compile and execute:
 cd liveness
-make
-./liveness
+./benchmark
 
 
 Supporting directories:
