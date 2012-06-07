@@ -1,5 +1,5 @@
 #!/bin/bash
 
-make clean && make && ./liveness 10000 1000 4 10 1 t t > CPU.txt
-make clean && make CFLAGS=-DUSE_OPENCL && ./liveness 10000 1000 4 10 1 t t > OPENCL.txt
+make clean && make liveness && (./liveness 10000 1000 4 10 t t > CPU.txt)
+make clean && make liveness-opencl && (./liveness-opencl 10000 1000 4 10 t t > OPENCL.txt)
 diff CPU.txt OPENCL.txt
