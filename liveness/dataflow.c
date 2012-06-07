@@ -19,24 +19,36 @@ unsigned int bitset_subsets;
 
 cl_device_id device_id;				// device id running computation
 cl_context context;					// compute context
+pthread_mutex_t context_mtx = PTHREAD_MUTEX_INITIALIZER;
 cl_command_queue queue;				// compute command queue
 cl_kernel or_kernel;				// compute kernel
 cl_kernel nand_kernel;				// compute kernel
+cl_kernel megaop_kernel;			// compute kernel
+cl_mem buf_or_bs1, buf_or_bs2;
+cl_mem buf_nand_bs1, buf_nand_bs2;
+cl_mem buf_megaop_in, buf_megaop_out, buf_megaop_use, buf_megaop_def;
 size_t cl_or_local_workgroup_size;
 size_t cl_nand_local_workgroup_size;
+size_t cl_megaop_local_workgroup_size;
 
 void bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *mem1, cl_mem *mem2);
 void bitset_and_not(unsigned int* bs1, unsigned int* bs2, cl_mem *mem1, cl_mem *mem2);
+void bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, unsigned int* def,
+                      cl_mem *buf_in, cl_mem *buf_out, cl_mem *buf_use, cl_mem *buf_def);
 
 void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem *buf_bs2);
 void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem *buf_bs2);
+void cl_bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, unsigned int* def,
+                      cl_mem *buf_in, cl_mem *buf_out, cl_mem *buf_use, cl_mem *buf_def);
 
 #ifdef USE_OPENCL
 void (*bitset_or_ptr)(unsigned int*, unsigned int*, cl_mem*, cl_mem*) = &cl_bitset_or;
 void (*bitset_nand_ptr)(unsigned int*, unsigned int*, cl_mem*, cl_mem*) = &cl_bitset_nand;
+void (*bitset_megaop_ptr)(unsigned int*, unsigned int*, unsigned int*, unsigned int*, cl_mem*, cl_mem*, cl_mem*, cl_mem*) = &cl_bitset_megaop;
 #else
 void (*bitset_or_ptr)(unsigned int*, unsigned int*, cl_mem*, cl_mem*) = &bitset_or;
 void (*bitset_nand_ptr)(unsigned int*, unsigned int*, cl_mem*, cl_mem*) = &bitset_and_not;
+void (*bitset_megaop_ptr)(unsigned int*, unsigned int*, unsigned int*, unsigned int*, cl_mem*, cl_mem*, cl_mem*, cl_mem*) = &cl_bitset_megaop;
 #endif
 
 static double sec(void){
@@ -195,19 +207,33 @@ bool bitset_equals(unsigned int* bs1, unsigned int* bs2){
 }
 
 void bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *mem1, cl_mem *mem2){
-	mem1 = mem2;
+	pthread_mutex_lock(&context_mtx);
     for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
         bs1[i] |= bs2[i];
     }
+	pthread_mutex_unlock(&context_mtx);
 }
 
 void bitset_and_not(unsigned int* bs1, unsigned int* bs2, cl_mem *mem1, cl_mem *mem2){
-	mem1 = mem2;
+	pthread_mutex_lock(&context_mtx);
     for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
         unsigned int tmp = bs1[i] & bs2[i];
         tmp = ~tmp;
         bs1[i] = tmp & bs1[i];
     }
+	pthread_mutex_unlock(&context_mtx);
+}
+
+void bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, unsigned int* def,
+                      cl_mem *buf_in, cl_mem *buf_out, cl_mem *buf_use, cl_mem *buf_def)
+{
+	pthread_mutex_lock(&context_mtx);
+    for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+		in[i] |= out[i];
+		in[i]  = in[i] & (~(in[i] & def[i]));
+		in[i] |= use[i];
+	}
+	pthread_mutex_unlock(&context_mtx);
 }
 
 void computeIn(Vertex* u, list_t* worklist, cl_mem *buf_or_bs1, cl_mem *buf_or_bs2, cl_mem *buf_nand_bs1, cl_mem *buf_nand_bs2){
@@ -424,6 +450,7 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, random_t* r){
 
 void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem *buf_bs2)
 {
+	pthread_mutex_lock(&context_mtx);
 	cl_int err;
 	cl_event events[3];
 
@@ -438,16 +465,6 @@ void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem 
 	err = clWaitForEvents(2, events);
     if (err != CL_SUCCESS) {
             printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
-            exit(err);
-    }
-
-	
-    // Set the arguments to our compute kernel
-	err  = clSetKernelArg(or_kernel, 0, sizeof(cl_mem), buf_bs1);
-	err |= clSetKernelArg(or_kernel, 1, sizeof(cl_mem), buf_bs2);
-	err |= clSetKernelArg(or_kernel, 2,  sizeof(unsigned int), &bitset_subsets);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to set kernel arguments: %s\n", ocl_error_string(err));
             exit(err);
     }
 
@@ -472,11 +489,13 @@ void cl_bitset_or(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem 
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
     }
+	pthread_mutex_unlock(&context_mtx);
 }
 
 
 void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_mem *buf_bs2)
 {
+	pthread_mutex_lock(&context_mtx);
 	cl_int err;
 	cl_event events[3];
 
@@ -491,16 +510,6 @@ void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_me
 	err = clWaitForEvents(2, events);
     if (err != CL_SUCCESS) {
             printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
-            exit(err);
-    }
-
-	
-    // Set the arguments to our compute kernel
-	err  = clSetKernelArg(nand_kernel, 0, sizeof(cl_mem), buf_bs1);
-	err |= clSetKernelArg(nand_kernel, 1, sizeof(cl_mem), buf_bs2);
-	err |= clSetKernelArg(nand_kernel, 2,  sizeof(unsigned int), &bitset_subsets);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to set kernel arguments: %s\n", ocl_error_string(err));
             exit(err);
     }
 
@@ -525,6 +534,55 @@ void cl_bitset_nand(unsigned int* bs1, unsigned int* bs2, cl_mem *buf_bs1, cl_me
             printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
             exit(1);
     }
+	pthread_mutex_unlock(&context_mtx);
+}
+
+void cl_bitset_megaop(unsigned int* in, unsigned int* out, unsigned int* use, unsigned int* def,
+                      cl_mem *buf_in, cl_mem *buf_out, cl_mem *buf_use, cl_mem *buf_def)
+{
+	pthread_mutex_lock(&context_mtx);
+	cl_int err;
+	cl_event events[3];
+
+    // Write our data set into the input array in device memory
+    //err  = clEnqueueWriteBuffer(queue, *in, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, buf_in, 0, NULL, &(events[0]));
+    err  = clEnqueueWriteBuffer(queue, *buf_out, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, out, 0, NULL, &(events[0]));
+    err |= clEnqueueWriteBuffer(queue, *buf_use, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, use, 0, NULL, &(events[1]));
+    err |= clEnqueueWriteBuffer(queue, *buf_def, CL_FALSE, 0, sizeof(unsigned int) * bitset_subsets, def, 0, NULL, &(events[2]));
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to write to GPU memory: %s\n", ocl_error_string(err));
+            exit(err);
+    }
+
+	err = clWaitForEvents(3, events);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
+            exit(err);
+    }
+
+
+    // Execute the kernel over the entire range of our 1-dim input data set
+    // using the maximum number of work group items for this device
+	size_t global = bitset_subsets;
+    err = clEnqueueNDRangeKernel(queue, nand_kernel, 1, NULL, &global, &cl_nand_local_workgroup_size, 0, NULL, &(events[0]));
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to execute kernel: %s\n", ocl_error_string(err));
+            exit(err);
+    }
+
+	err = clWaitForEvents(1, &events[0]);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to wait for memory transfers: %s\n", ocl_error_string(err));
+            exit(err);
+    }
+
+    // Read back the results from the device to verify the output
+    err  = clEnqueueReadBuffer(queue, *buf_in, CL_TRUE, 0, nvertex * bitset_subsets, in, 0, NULL, &(events[1]));
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to read output array: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+	pthread_mutex_unlock(&context_mtx);
 }
 
 typedef struct thread_struct {
@@ -535,32 +593,6 @@ typedef struct thread_struct {
 void* thread_func(void* ts){
     list_t* worklist = ((thread_struct*) ts)->worklist;
     unsigned int index = ((thread_struct*) ts)->index;
-
-	cl_int err;
-	cl_mem buf_or_bs1, buf_or_bs2;
-	cl_mem buf_nand_bs1, buf_nand_bs2;
-
-    // Create the input and output arrays in device memory for our calculation
-    buf_or_bs1 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to allocate device buf_or_bs1 memory: %s\n", ocl_error_string(err));
-            exit(1);
-    }
-    buf_or_bs2 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to allocate device buf_or_bs2 memory: %s\n", ocl_error_string(err));
-            exit(1);
-    }
-    buf_nand_bs1 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to allocate device buf_nand_bs1 memory: %s\n", ocl_error_string(err));
-            exit(1);
-    }
-    buf_nand_bs2 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
-    if (err != CL_SUCCESS) {
-            printf("Error: Failed to allocate device buf_nand_bs2 memory: %s\n", ocl_error_string(err));
-            exit(1);
-    }
 
 	Vertex* u;
     unsigned int work_counter = 0;
@@ -651,24 +683,26 @@ int main(int ac, char** av){
 	printf("OpenCL: DISABLED\n");
 #endif
 
+	//
+	// Parse input parameters
 	if(ac != 8){
-	    printf("\nWrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n\n");
+	    printf("\nWrong # of args (nsym nvertex maxsucc nactive print_output print_input).\nAssuming sane defaults.\n\n");
 	} else {
 		char *tmp_string;
 		sscanf(av[1], "%d", &nsym);
 		sscanf(av[2], "%d", &nvertex);
 		sscanf(av[3], "%d", &maxsucc);
 		sscanf(av[4], "%d", &nactive);
-		sscanf(av[5], "%d", &nthread);
+//		sscanf(av[5], "%d", &nthread);
 
-		tmp_string = av[6];
+		tmp_string = av[5];
 		if(tolower(tmp_string[0]) == 't'){
 			print_output = true;
 		}else{
 			print_output = false;
 		}
 
-		tmp_string = av[7];
+		tmp_string = av[6];
 		if(tolower(tmp_string[0]) == 't'){
 			print_input = true;
 		}else{
@@ -682,17 +716,86 @@ int main(int ac, char** av){
 	//
 	// Setup OpenCL
 	cl_int err;
+	pthread_mutex_lock(&context_mtx);
 	setup_queue(&device_id, &context, &queue);
 	setup_kernel("bitset.cl", "bitset_or", &device_id, &context, &or_kernel);
 	setup_kernel("bitset.cl", "bitset_nand", &device_id, &context, &nand_kernel);
-
+	setup_kernel("bitset.cl", "bitset_megaop", &device_id, &context, &megaop_kernel);
+    // Set the arguments to nand compute kernel
+	err  = clSetKernelArg(nand_kernel, 0, sizeof(cl_mem), buf_nand_bs1);
+	err |= clSetKernelArg(nand_kernel, 1, sizeof(cl_mem), buf_nand_bs2);
+	err |= clSetKernelArg(nand_kernel, 2,  sizeof(unsigned int), &bitset_subsets);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to set nand-kernel arguments: %s\n", ocl_error_string(err));
+            exit(err);
+    }
+    // Set the arguments to megaop compute kernel
+	err  = clSetKernelArg(megaop_kernel, 0, sizeof(cl_mem), buf_megaop_in);
+	err |= clSetKernelArg(megaop_kernel, 1, sizeof(cl_mem), buf_megaop_out);
+	err |= clSetKernelArg(megaop_kernel, 2, sizeof(cl_mem), buf_megaop_use);
+	err |= clSetKernelArg(megaop_kernel, 3, sizeof(cl_mem), buf_megaop_def);
+	err |= clSetKernelArg(megaop_kernel, 4,  sizeof(unsigned int), &bitset_subsets);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to set megaop-kernel arguments: %s\n", ocl_error_string(err));
+            exit(err);
+    }
+    // Set the arguments to or compute kernel
+	err  = clSetKernelArg(or_kernel, 0, sizeof(cl_mem), buf_or_bs1);
+	err |= clSetKernelArg(or_kernel, 1, sizeof(cl_mem), buf_or_bs2);
+	err |= clSetKernelArg(or_kernel, 2,  sizeof(unsigned int), &bitset_subsets);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to set or-kernel arguments: %s\n", ocl_error_string(err));
+            exit(err);
+    }
     // Get the maximum work group size for executing the kernel on the device
     err  = clGetKernelWorkGroupInfo(or_kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &cl_or_local_workgroup_size, NULL);
     err |= clGetKernelWorkGroupInfo(nand_kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &cl_nand_local_workgroup_size, NULL);
+    err |= clGetKernelWorkGroupInfo(megaop_kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &cl_megaop_local_workgroup_size, NULL);
     if (err != CL_SUCCESS) {
             printf("Error: Failed to retrieve kernel work group info: %s\n", ocl_error_string(err));
             exit(1);
     }
+    buf_or_bs1 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_or_bs1 memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_or_bs2 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_or_bs2 memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_nand_bs1 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_nand_bs1 memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_nand_bs2 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_nand_bs2 memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_megaop_in = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_megaop_in memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_megaop_out = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_megaop_out memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_megaop_use = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_megaop_use memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+    buf_megaop_def = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(unsigned int) * bitset_subsets, NULL, &err);
+    if (err != CL_SUCCESS) {
+            printf("Error: Failed to allocate device buf_megaop_def memory: %s\n", ocl_error_string(err));
+            exit(1);
+    }
+	pthread_mutex_unlock(&context_mtx);
 
 
 	//
@@ -705,9 +808,12 @@ int main(int ac, char** av){
 	generateCFG(vertex, maxsucc, r);
 	generateUseDef(vertex, nsym, nactive, r);
 
+	//
 	// Compute liveness
 	liveness(vertex, nthread);
-
+	
+	//
+	// Output result
 	if(print_output){
         tmp_list = vertex->next;
 
