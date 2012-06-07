@@ -658,7 +658,7 @@ int main(int ac, char** av){
 	int maxsucc = 6;
 	int nactive = 10;
 	int	nthread = 1;
-	bool print_output = true;
+	bool print_output = false;
 	print_input = false; 
 	list_t* vertex;
 	random_t* r = new_random();
@@ -675,7 +675,7 @@ int main(int ac, char** av){
 
 	//
 	// Parse input parameters
-	if(ac != 8){
+	if(ac != 7){
 	    printf("\nWrong # of args (nsym nvertex maxsucc nactive print_output print_input).\nAssuming sane defaults.\n\n");
 	} else {
 		char *tmp_string;
@@ -683,7 +683,6 @@ int main(int ac, char** av){
 		sscanf(av[2], "%d", &nvertex);
 		sscanf(av[3], "%d", &maxsucc);
 		sscanf(av[4], "%d", &nactive);
-//		sscanf(av[5], "%d", &nthread);
 
 		tmp_string = av[5];
 		if(tolower(tmp_string[0]) == 't'){

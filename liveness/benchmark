@@ -1,5 +1,5 @@
 #!/bin/bash
 
-make clean && make liveness && (./liveness 10000 1000 4 10 t t > CPU.txt)
-make clean && make liveness-opencl && (./liveness-opencl 10000 1000 4 10 t t > OPENCL.txt)
+make clean && make liveness && (./liveness 30000 3000 4 10 t t > CPU.txt)
+make clean && make liveness-opencl && (./liveness-opencl 30000 3000 4 10 t t > OPENCL.txt)
 diff CPU.txt OPENCL.txt
